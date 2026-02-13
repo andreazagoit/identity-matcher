@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { authClient } from "@/lib/client";
 import { CheckCircle2Icon, Loader2Icon, ShieldCheckIcon, XCircleIcon } from "lucide-react";
+import { Container } from "@/components/container";
 
 /**
  * Human-readable descriptions for each OAuth scope
@@ -120,7 +121,7 @@ function ConsentContent() {
 
   if (error && !clientInfo) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
             <XCircleIcon className="w-12 h-12 text-destructive mx-auto mb-2" />
@@ -130,12 +131,12 @@ function ConsentContent() {
             <p className="text-muted-foreground text-center">{error}</p>
           </CardContent>
         </Card>
-      </div>
+      </Container>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-6">
@@ -197,7 +198,7 @@ function ConsentContent() {
                 className="flex-1"
               >
                 {submitting && (
-                  <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
+                  <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
                 )}
                 Autorizza
               </Button>
@@ -209,7 +210,7 @@ function ConsentContent() {
           Potrai revocare l&apos;accesso in qualsiasi momento dalle impostazioni del tuo account.
         </p>
       </div>
-    </div>
+    </Container>
   );
 }
 

@@ -190,19 +190,6 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                           <ExternalLink className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        title="Elimina"
-                        onClick={async () => {
-                          if (confirm(`Sei sicuro di voler eliminare il client "${client.name}"?`)) {
-                            await deleteClient(client.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Container } from "@/components/container";
 
 function AssessmentContent() {
   const searchParams = useSearchParams();
@@ -89,7 +90,7 @@ function AssessmentContent() {
 
   if (loading || completed) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             {completed ? (
@@ -112,14 +113,14 @@ function AssessmentContent() {
             )}
           </CardHeader>
         </Card>
-      </div>
+      </Container>
     );
   }
 
   // ── Choice screen: compile now or skip ──
   if (!showQuestionnaire) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
         <div className="w-full max-w-md space-y-6">
           {/* Header */}
           <div className="text-center">
@@ -168,13 +169,13 @@ function AssessmentContent() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </Container>
     );
   }
 
   // ── Questionnaire screen ──
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-6">
@@ -203,7 +204,7 @@ function AssessmentContent() {
           onSkip={handleSkip}
         />
       </div>
-    </div>
+    </Container>
   );
 }
 

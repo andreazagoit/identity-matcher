@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { authClient } from "@/lib/client";
 import { Loader2Icon } from "lucide-react";
+import { Container } from "@/components/container";
 
 type AuthMode = "login" | "signup";
 
@@ -158,7 +159,7 @@ function SignInContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-6">
@@ -370,7 +371,7 @@ function SignInContent() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </Container>
   );
 }
 
