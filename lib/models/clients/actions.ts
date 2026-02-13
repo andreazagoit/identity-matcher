@@ -29,7 +29,7 @@ export async function createClient(formData: FormData) {
     redirectUris,
     grantTypes: ["authorization_code", "refresh_token"],
     responseTypes: ["code"],
-    type: "web",
+    type: "third_party",
     createdAt: new Date(),
     updatedAt: new Date(),
   });

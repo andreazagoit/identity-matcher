@@ -72,12 +72,16 @@ export const auth = betterAuth({
       consentPage: "/oauth2/consent",
       accessTokenExpiresIn: 3600, // 1 hour
       refreshTokenExpiresIn: 30 * 24 * 60 * 60, // 30 days
-      // Scopes supported by this OAuth server
       scopes: ["openid", "profile", "email", "offline_access"],
     }),
     apiKey(),
     nextCookies(),
   ],
+
+  // Routes are set up — silence the startup check
+  silenceWarnings: {
+    oauthAuthServerConfig: true,
+  },
 });
 
 export type Session = typeof auth.$Infer.Session;

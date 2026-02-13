@@ -124,10 +124,12 @@ function SignInContent() {
         return;
       }
 
-      // Sign-up doesn't auto-continue the OAuth flow because the client
-      // plugin only intercepts /sign-in/email, not /sign-up/email.
-      // We must call oauth2.continue({ created: true }) to proceed.
+      // After signup → redirect to assessment questionnaire.
+      // We pass the final redirect as a query param so the assessment
+      // page can continue the flow once the user completes it.
+
       if (isOAuthFlow) {
+        // For OAuth flow: get the continue URL first, then pass it to assessment
         const continueRes = await authClient.oauth2.continue({
           created: true,
         });
@@ -138,11 +140,17 @@ function SignInContent() {
           return;
         }
 
-        if (handleOAuthRedirect(continueRes.data as Record<string, unknown>)) return;
+        const data = continueRes.data as Record<string, unknown>;
+        if (data && typeof data === "object" && "url" in data && typeof data.url === "string") {
+          // Redirect to assessment, then back to the OAuth consent/callback
+          const assessmentUrl = `/oauth2/assessment?redirect=${encodeURIComponent(data.url)}&oauth_continue=true`;
+          window.location.href = assessmentUrl;
+          return;
+        }
       }
 
-      // Normal sign-up (not OAuth flow)
-      window.location.href = fallbackRedirect;
+      // Normal sign-up (not OAuth flow) → go to assessment, then home
+      window.location.href = `/oauth2/assessment?redirect=${encodeURIComponent(fallbackRedirect)}`;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registrazione fallita");
       setLoading(false);

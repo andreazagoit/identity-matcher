@@ -1,5 +1,5 @@
-import { getClientById } from "@/lib/actions/clients";
-import { getApiKeys } from "@/lib/actions/api-keys";
+import { getClientById } from "@/lib/models/clients/actions";
+import { getApiKeys } from "@/lib/models/api-keys/actions";
 import ClientDetailEditor from "./client-detail-editor";
 import ApiKeysManager from "../api-keys-manager";
 import { notFound } from "next/navigation";

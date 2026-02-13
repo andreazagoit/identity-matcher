@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createApiKey, deleteApiKey } from "@/lib/actions/api-keys";
+import { createApiKey, deleteApiKey } from "@/lib/models/api-keys/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +22,14 @@ import {
 } from "@/components/ui/table";
 import { Trash2, Copy, Plus, Loader2, ShieldCheck } from "lucide-react";
 
-export default function ApiKeysManager({ initialKeys, clientId }: { initialKeys: any[], clientId?: string }) {
+interface ApiKey {
+  id: string;
+  name: string | null;
+  key: string;
+  createdAt: Date;
+}
+
+export default function ApiKeysManager({ initialKeys, clientId }: { initialKeys: ApiKey[], clientId?: string }) {
   const [loading, setLoading] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
 

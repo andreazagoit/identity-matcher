@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateClient } from "@/lib/actions/clients";
+import { updateClient } from "@/lib/models/clients/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +14,18 @@ import {
 } from "@/components/ui/card";
 import { Copy, Loader2, Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { RedirectUriManager } from "../redirect-uri-manager";
 
-export default function ClientDetailEditor({ client }: { client: any }) {
+interface Client {
+  id: string;
+  name: string;
+  clientId: string;
+  redirectUris: string[];
+  createdAt: Date;
+  type: string;
+}
+
+export default function ClientDetailEditor({ client }: { client: Client }) {
   const [loading, setLoading] = useState(false);
 
   async function handleUpdate(e: React.FormEvent<HTMLFormElement>) {
@@ -48,20 +58,17 @@ export default function ClientDetailEditor({ client }: { client: any }) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleUpdate} className="space-y-4">
+              <form onSubmit={handleUpdate} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome Applicazione</Label>
                   <Input id="name" name="name" defaultValue={client.name} required />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="redirectUris">Redirect URIs (separati da virgola)</Label>
-                  <Input
-                    id="redirectUris"
-                    name="redirectUris"
-                    defaultValue={client.redirectUris?.join(", ")}
-                    required
-                  />
-                </div>
+                
+                <RedirectUriManager 
+                  name="redirectUris" 
+                  defaultValue={client.redirectUris} 
+                />
+
                 <Button type="submit" disabled={loading}>
                   {loading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

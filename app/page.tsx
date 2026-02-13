@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ShieldCheckIcon, KeyIcon, UsersIcon } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ShieldCheckIcon, KeyIcon, UsersIcon, LayoutDashboardIcon, LogInIcon } from "lucide-react";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-lg text-center">
@@ -18,37 +24,37 @@ export default function Home() {
         </p>
 
         <div className="grid gap-4 mb-8">
-          <Card size="sm">
-            <CardHeader>
+          <Card>
+            <CardHeader className="p-4">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <ShieldCheckIcon className="w-4 h-4 text-primary" />
                 OAuth 2.1
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs">
                 Autenticazione sicura con PKCE, JWT e refresh tokens
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card size="sm">
-            <CardHeader>
+          <Card>
+            <CardHeader className="p-4">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <KeyIcon className="w-4 h-4 text-primary" />
                 OpenID Connect
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs">
                 Compatibile OIDC con id_token e UserInfo endpoint
               </CardDescription>
             </CardHeader>
           </Card>
 
-          <Card size="sm">
-            <CardHeader>
+          <Card>
+            <CardHeader className="p-4">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <UsersIcon className="w-4 h-4 text-primary" />
                 Client Registration
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs">
                 Registrazione dinamica di client OAuth per apps e community
               </CardDescription>
             </CardHeader>
@@ -56,13 +62,31 @@ export default function Home() {
         </div>
 
         <div className="flex gap-3 justify-center">
-          <Link href="/sign-in">
-            <Button>Accedi</Button>
-          </Link>
-          <Link href="/.well-known/openid-configuration">
+          {session ? (
+            <Link href="/dashboard">
+              <Button className="gap-2">
+                <LayoutDashboardIcon className="w-4 h-4" />
+                Vai alla Dashboard
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/oauth2/sign-in">
+              <Button className="gap-2">
+                <LogInIcon className="w-4 h-4" />
+                Accedi / Registrati
+              </Button>
+            </Link>
+          )}
+          <Link href="/api/auth/.well-known/openid-configuration" target="_blank">
             <Button variant="outline">OIDC Config</Button>
           </Link>
         </div>
+
+        {session && (
+          <p className="mt-6 text-sm text-muted-foreground">
+            Connesso come <span className="font-medium text-foreground">{session.user.email}</span>
+          </p>
+        )}
       </div>
     </div>
   );
