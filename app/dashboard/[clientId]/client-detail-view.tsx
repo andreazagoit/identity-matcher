@@ -81,6 +81,7 @@ export default function ClientDetailView({
   const router = useRouter();
   const clientId = client.id as string;
   const clientOAuthId = client.clientId as string;
+  const clientSecret = client.clientSecret as string;
   const clientName = client.name as string;
   const clientType = client.type as string;
   const clientRedirectUris = client.redirectUris as string[];
@@ -200,14 +201,26 @@ export default function ClientDetailView({
                 </Button>
               </div>
             </div>
-            <div className="flex-1">
-              <Label className="text-xs text-muted-foreground">
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs text-muted-foreground uppercase">
                 Client Secret
               </Label>
-              <div className="flex items-center h-[34px]">
-                <p className="text-xs text-muted-foreground">
-                  Il secret è visibile solo alla creazione del client.
-                </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-muted px-3 py-1.5 rounded-md text-xs font-mono truncate">
+                  {clientSecret}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 h-8 w-8"
+                  onClick={() => copyToClipboard(clientSecret, "clientSecret")}
+                >
+                  {copiedField === "clientSecret" ? (
+                    <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </Button>
               </div>
             </div>
           </div>
