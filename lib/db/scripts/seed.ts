@@ -2,14 +2,16 @@ import "dotenv/config";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "../../schema";
+import { insertUser } from "../../models/users/operations";
+import { insertClient } from "../../models/clients/operations";
+import { insertAssessment } from "../../models/assessments/operations";
+import { assembleProfile } from "../../models/assessments/assembler";
+import { upsertProfile } from "../../models/profiles/operations";
 import {
   QUESTIONS,
   SECTIONS,
-  ASSESSMENT_NAME,
   type Section,
 } from "../../models/assessments/questions";
-import { assembleProfile } from "../../models/assessments/assembler";
-import { generateAllUserEmbeddings } from "../../embeddings";
 
 const client = postgres(process.env.DATABASE_URL!, { prepare: false });
 const db = drizzle(client, { schema });
@@ -19,9 +21,9 @@ const db = drizzle(client, { schema });
  * Creates:
  *  1. A "service admin" user (owner of both default OAuth clients)
  *  2. Two default OAuth clients:
- *     - Identity Matcher (first_party, skipConsent) → the service's own
+ *     - Identity Matcher → the service's own
  *       web-app, lets users manage their account + create OAuth clients.
- *     - Demo App (third_party) → sample client for testing the OAuth flow.
+ *     - Demo App → sample client for testing the OAuth flow.
  *  3. Test users with completed assessments and profile embeddings.
  */
 
@@ -33,11 +35,6 @@ const SERVICE_CLIENT = {
   clientSecret: "idm_service_secret_change_me_in_production",
   name: "Identity Matcher",
   redirectUris: ["http://localhost:4000/api/auth/callback/identitymatcher"],
-  grantTypes: ["authorization_code", "refresh_token"],
-  responseTypes: ["code"],
-  scopes: ["openid", "profile", "email", "offline_access"],
-  type: "first_party",
-  skipConsent: true,
 } as const;
 
 const DEMO_CLIENT = {
@@ -46,11 +43,6 @@ const DEMO_CLIENT = {
   clientSecret: "idm_demo_secret_change_me_in_production",
   name: "Demo App",
   redirectUris: ["http://localhost:3000/api/auth/callback/identitymatcher"],
-  grantTypes: ["authorization_code", "refresh_token"],
-  responseTypes: ["code"],
-  scopes: ["openid", "profile", "email"],
-  type: "third_party",
-  skipConsent: false,
 } as const;
 
 // ── Seed Users ─────────────────────────────────────────────────────
@@ -207,110 +199,51 @@ async function seed() {
   try {
     // ── 1. Create admin user (owner of default OAuth clients) ──
     console.log("👤 Creating admin user...");
-    const [adminUser] = await db
-      .insert(schema.user)
-      .values({
-        id: crypto.randomUUID(),
-        ...ADMIN_USER,
-        emailVerified: true,
-      })
-      .returning();
+    const adminUser = await insertUser(db, {
+      ...ADMIN_USER,
+      emailVerified: true,
+    });
     console.log(`  ✓ Admin: ${ADMIN_USER.email}`);
 
     // ── 2. Create default OAuth clients ──
     console.log("\n🔑 Creating default OAuth clients...");
 
-    const now = new Date();
-
-    await db.insert(schema.oauthClient).values({
-      id: SERVICE_CLIENT.id,
-      clientId: SERVICE_CLIENT.clientId,
-      clientSecret: SERVICE_CLIENT.clientSecret,
-      name: SERVICE_CLIENT.name,
-      redirectUris: [...SERVICE_CLIENT.redirectUris],
-      grantTypes: [...SERVICE_CLIENT.grantTypes],
-      responseTypes: [...SERVICE_CLIENT.responseTypes],
-      scopes: [...SERVICE_CLIENT.scopes],
-      type: SERVICE_CLIENT.type,
-      skipConsent: SERVICE_CLIENT.skipConsent,
+    await insertClient(db, {
+      ...SERVICE_CLIENT,
       userId: adminUser.id,
-      createdAt: now,
-      updatedAt: now,
     });
-    console.log(`  ✓ Service client: ${SERVICE_CLIENT.name} (${SERVICE_CLIENT.type})`);
+    console.log(`  ✓ Service client: ${SERVICE_CLIENT.name}`);
     console.log(`    Client ID: ${SERVICE_CLIENT.clientId}`);
     console.log(`    Redirect:  ${SERVICE_CLIENT.redirectUris[0]}`);
 
-    await db.insert(schema.oauthClient).values({
-      id: DEMO_CLIENT.id,
-      clientId: DEMO_CLIENT.clientId,
-      clientSecret: DEMO_CLIENT.clientSecret,
-      name: DEMO_CLIENT.name,
-      redirectUris: [...DEMO_CLIENT.redirectUris],
-      grantTypes: [...DEMO_CLIENT.grantTypes],
-      responseTypes: [...DEMO_CLIENT.responseTypes],
-      scopes: [...DEMO_CLIENT.scopes],
-      type: DEMO_CLIENT.type,
-      skipConsent: DEMO_CLIENT.skipConsent,
+    await insertClient(db, {
+      ...DEMO_CLIENT,
       userId: adminUser.id,
-      createdAt: now,
-      updatedAt: now,
     });
-    console.log(`  ✓ Demo client:    ${DEMO_CLIENT.name} (${DEMO_CLIENT.type})`);
+    console.log(`  ✓ Demo client:    ${DEMO_CLIENT.name}`);
     console.log(`    Client ID: ${DEMO_CLIENT.clientId}`);
     console.log(`    Redirect:  ${DEMO_CLIENT.redirectUris[0]}`);
 
     // ── 3. Create test users with assessments + profiles ──
-    console.log(`\n📦 Creating ${SEED_USERS.length} test users with embeddings...`);
+    console.log(
+      `\n📦 Creating ${SEED_USERS.length} test users with embeddings...`,
+    );
 
     for (let i = 0; i < SEED_USERS.length; i++) {
       const userData = SEED_USERS[i];
 
       // Create user
-      const [user] = await db
-        .insert(schema.user)
-        .values({
-          id: crypto.randomUUID(),
-          ...userData,
-          emailVerified: false,
-        })
-        .returning();
+      const user = await insertUser(db, userData);
 
       // Generate random assessment answers
       const answers = generateRandomAnswers();
 
       // Save assessment
-      await db.insert(schema.assessments).values({
-        userId: user.id,
-        assessmentName: ASSESSMENT_NAME,
-        answers,
-        status: "completed",
-      });
+      await insertAssessment(db, { userId: user.id, answers });
 
-      // Assemble profile text from answers
+      // Assemble profile text from answers & generate embeddings
       const profileData = assembleProfile(answers);
-
-      // Generate vector embeddings via OpenAI
-      const embeddings = await generateAllUserEmbeddings({
-        psychological: profileData.psychologicalDesc,
-        values: profileData.valuesDesc,
-        interests: profileData.interestsDesc,
-        behavioral: profileData.behavioralDesc,
-      });
-
-      // Save profile with embeddings
-      await db.insert(schema.profiles).values({
-        userId: user.id,
-        psychologicalDesc: profileData.psychologicalDesc,
-        valuesDesc: profileData.valuesDesc,
-        interestsDesc: profileData.interestsDesc,
-        behavioralDesc: profileData.behavioralDesc,
-        psychologicalEmbedding: embeddings.psychological,
-        valuesEmbedding: embeddings.values,
-        interestsEmbedding: embeddings.interests,
-        behavioralEmbedding: embeddings.behavioral,
-        assessmentVersion: 1,
-      });
+      await upsertProfile(db, user.id, profileData, 1);
 
       console.log(
         `  ✓ ${i + 1}/${SEED_USERS.length} - ${userData.firstName} ${userData.lastName}`,
@@ -321,11 +254,17 @@ async function seed() {
     console.log("✅ Seed completed!");
     console.log(`   • 1 admin user (${ADMIN_USER.email})`);
     console.log(`   • 2 OAuth clients (service + demo)`);
-    console.log(`   • ${SEED_USERS.length} test users with assessments and profiles`);
+    console.log(
+      `   • ${SEED_USERS.length} test users with assessments and profiles`,
+    );
     console.log("═".repeat(50));
     console.log("\n📋 Default OAuth Clients:");
-    console.log(`   Service:  clientId=${SERVICE_CLIENT.clientId}  secret=${SERVICE_CLIENT.clientSecret}`);
-    console.log(`   Demo:     clientId=${DEMO_CLIENT.clientId}  secret=${DEMO_CLIENT.clientSecret}`);
+    console.log(
+      `   Service:  clientId=${SERVICE_CLIENT.clientId}  secret=${SERVICE_CLIENT.clientSecret}`,
+    );
+    console.log(
+      `   Demo:     clientId=${DEMO_CLIENT.clientId}  secret=${DEMO_CLIENT.clientSecret}`,
+    );
   } catch (error) {
     console.error("❌ Seed failed:", error);
     process.exit(1);

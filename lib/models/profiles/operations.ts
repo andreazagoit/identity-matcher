@@ -1,12 +1,12 @@
 /**
  * Profile operations: CRUD + Matching Engine.
+ * Every function receives `db` so it can be called from
+ * server-actions, GraphQL resolvers, **and** standalone scripts (seed).
  *
  * Key feature: client-scoped matching.
- * - first_party clients: search across ALL users
- * - third_party clients: search only users with consent for that client
+ * Clients only see users who gave consent for that specific client.
  */
 
-import { db } from "@/lib/db";
 import { eq, ne, sql, and, inArray } from "drizzle-orm";
 import { cosineDistance } from "drizzle-orm";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/lib/schema";
 import { generateAllUserEmbeddings } from "@/lib/embeddings";
 import type { ProfileData } from "@/lib/models/assessments/assembler";
+import type { Db } from "@/lib/db";
 
 // ============================================
 // TYPES
@@ -50,8 +51,6 @@ export interface FindMatchesOptions {
   userId: string;
   /** OAuth client_id (string identifier) for scoping */
   clientId?: string;
-  /** Client type: "first_party" = global, anything else = scoped */
-  clientType?: string;
   /** Max results */
   limit?: number;
   /** Custom weights override */
@@ -73,6 +72,7 @@ export interface FindMatchesOptions {
  * Generates vector embeddings from textual descriptions via OpenAI.
  */
 export async function upsertProfile(
+  db: Db,
   userId: string,
   data: ProfileData,
   assessmentVersion: number = 1,
@@ -125,6 +125,7 @@ export async function upsertProfile(
  * Retrieve a user profile by User ID.
  */
 export async function getProfileByUserId(
+  db: Db,
   userId: string,
 ): Promise<Profile | null> {
   const result = await db.query.profiles.findFirst({
@@ -136,8 +137,11 @@ export async function getProfileByUserId(
 /**
  * Check if a user has a complete profile with embeddings.
  */
-export async function hasCompleteProfile(userId: string): Promise<boolean> {
-  const profile = await getProfileByUserId(userId);
+export async function hasCompleteProfile(
+  db: Db,
+  userId: string,
+): Promise<boolean> {
+  const profile = await getProfileByUserId(db, userId);
   return !!profile?.psychologicalEmbedding;
 }
 
@@ -148,9 +152,7 @@ export async function hasCompleteProfile(userId: string): Promise<boolean> {
 /**
  * Find compatible matches using ANN search + weighted ranking.
  *
- * Scoping logic:
- * - first_party client → search ALL users with profiles
- * - third_party client → only users with oauthConsent for that client
+ * Scoping: only users with oauthConsent for the given client.
  *
  * Matching stages:
  * 1. ANN Search on 'psychological' axis (dominant) for candidate pool
@@ -158,12 +160,12 @@ export async function hasCompleteProfile(userId: string): Promise<boolean> {
  * 3. Weighted ranking
  */
 export async function findMatches(
+  db: Db,
   options: FindMatchesOptions,
 ): Promise<ProfileMatch[]> {
   const {
     userId,
     clientId,
-    clientType,
     limit = 10,
     weights = DEFAULT_MATCHING_WEIGHTS,
     gender,
@@ -173,7 +175,7 @@ export async function findMatches(
 
   const CANDIDATES = 200;
 
-  const currentProfile = await getProfileByUserId(userId);
+  const currentProfile = await getProfileByUserId(db, userId);
   if (!currentProfile?.psychologicalEmbedding) {
     throw new Error("Profile not found. Complete the assessment first.");
   }
@@ -184,9 +186,6 @@ export async function findMatches(
     currentProfile.interestsEmbedding as number[] | null;
   const behavioralEmbedding =
     currentProfile.behavioralEmbedding as number[] | null;
-
-  // Determine if we need client scoping
-  const isGlobal = clientType === "first_party" || !clientId;
 
   // Build base query with filters
   const filterConditions = [ne(profiles.userId, userId)];
@@ -207,8 +206,8 @@ export async function findMatches(
     );
   }
 
-  // For third_party clients, scope to users with consent for this client
-  if (!isGlobal && clientId) {
+  // Scope to users with consent for this client
+  if (clientId) {
     const usersWithConsent = db
       .select({ userId: oauthConsent.userId })
       .from(oauthConsent)

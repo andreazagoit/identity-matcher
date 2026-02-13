@@ -71,7 +71,6 @@ async function getClientFromApiKey(
 
     return {
       clientId: client.clientId,
-      type: client.type,
       name: client.name,
     };
   } catch {

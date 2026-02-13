@@ -1,15 +1,18 @@
 "use server";
 
 import { db } from "@/lib/db";
-import { oauthClient } from "@/lib/schema";
-import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { generateRandomString } from "better-auth/crypto";
+import {
+  findAllClients,
+  findClientById,
+  insertClient,
+  updateClientConfig,
+  removeClient,
+  regenerateClientSecret,
+} from "./operations";
 
 export async function getClients() {
-  return await db.query.oauthClient.findMany({
-    orderBy: (clients, { desc }) => [desc(clients.createdAt)],
-  });
+  return await findAllClients(db);
 }
 
 export async function createClient(formData: FormData) {
@@ -18,35 +21,19 @@ export async function createClient(formData: FormData) {
     .split(",")
     .map((uri) => uri.trim());
 
-  const clientId = generateRandomString(32);
-  const clientSecret = generateRandomString(32);
-
-  await db.insert(oauthClient).values({
-    id: generateRandomString(16),
-    clientId,
-    clientSecret,
-    name,
-    redirectUris,
-    grantTypes: ["authorization_code", "refresh_token"],
-    responseTypes: ["code"],
-    type: "third_party",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+  const result = await insertClient(db, { name, redirectUris });
 
   revalidatePath("/dashboard");
-  return { clientId, clientSecret };
+  return result;
 }
 
 export async function deleteClient(id: string) {
-  await db.delete(oauthClient).where(eq(oauthClient.id, id));
+  await removeClient(db, id);
   revalidatePath("/dashboard");
 }
 
 export async function getClientById(id: string) {
-  return await db.query.oauthClient.findFirst({
-    where: eq(oauthClient.id, id),
-  });
+  return await findClientById(db, id);
 }
 
 export async function updateClient(id: string, formData: FormData) {
@@ -55,15 +42,14 @@ export async function updateClient(id: string, formData: FormData) {
     .split(",")
     .map((uri) => uri.trim());
 
-  await db
-    .update(oauthClient)
-    .set({
-      name,
-      redirectUris,
-      updatedAt: new Date(),
-    })
-    .where(eq(oauthClient.id, id));
+  await updateClientConfig(db, id, { name, redirectUris });
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/${id}`);
+}
+
+export async function rotateClientSecret(id: string) {
+  const result = await regenerateClientSecret(db, id);
+  revalidatePath(`/dashboard/${id}`);
+  return result;
 }

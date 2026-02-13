@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { updateClient, deleteClient } from "@/lib/models/clients/actions";
+import { updateClient, deleteClient, rotateClientSecret } from "@/lib/models/clients/actions";
 import { createApiKey, deleteApiKey } from "@/lib/models/api-keys/actions";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ import {
   UsersIcon,
   BrainCircuitIcon,
   UserCheckIcon,
+  RefreshCwIcon,
 } from "lucide-react";
 import { RedirectUriManager } from "../redirect-uri-manager";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -83,7 +84,6 @@ export default function ClientDetailView({
   const clientOAuthId = client.clientId as string;
   const clientSecret = client.clientSecret as string;
   const clientName = client.name as string;
-  const clientType = client.type as string;
   const clientRedirectUris = client.redirectUris as string[];
   const createdAt = client.createdAt as Date;
 
@@ -98,6 +98,19 @@ export default function ClientDetailView({
   const [apiKeys, setApiKeys] = useState(initialApiKeys);
   const [keyLoading, setKeyLoading] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [secretLoading, setSecretLoading] = useState(false);
+
+  async function handleRefresh() {
+    router.refresh();
+  }
+
+  async function handleRotateSecret() {
+    if (!confirm("Sei sicuro di voler rigenerare il Client Secret? Tutte le integrazioni esistenti che usano il vecchio secret smetteranno di funzionare.")) return;
+    setSecretLoading(true);
+    await rotateClientSecret(clientId);
+    setSecretLoading(false);
+    router.refresh();
+  }
 
   function copyToClipboard(text: string, field: string) {
     navigator.clipboard.writeText(text);
@@ -127,23 +140,32 @@ export default function ClientDetailView({
     router.push("/dashboard");
   }
 
-  async function handleCreateApiKey(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function handleCreateApiKey() {
     setKeyLoading(true);
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData();
     formData.append("clientId", clientId);
+    formData.append("name", "Default API Key");
     const result = await createApiKey(formData);
     if (result && "key" in result) {
       setNewKey(result.key);
+      router.refresh();
     }
     setKeyLoading(false);
-    (e.target as HTMLFormElement).reset();
   }
 
-  async function handleDeleteApiKey(id: string) {
-    if (!confirm("Sei sicuro di voler revocare questa chiave?")) return;
+  async function handleRotateApiKey(id: string) {
+    if (!confirm("Sei sicuro di voler rigenerare questa chiave? La vecchia chiave smetterà di funzionare immediatamente.")) return;
+    setKeyLoading(true);
     await deleteApiKey(id);
-    setApiKeys((prev) => prev.filter((k) => k.id !== id));
+    const formData = new FormData();
+    formData.append("clientId", clientId);
+    formData.append("name", "Default API Key");
+    const result = await createApiKey(formData);
+    if (result && "key" in result) {
+      setNewKey(result.key);
+      router.refresh();
+    }
+    setKeyLoading(false);
   }
 
   return (
@@ -160,11 +182,6 @@ export default function ClientDetailView({
             <h1 className="text-2xl font-bold tracking-tight truncate">
               {clientName}
             </h1>
-            {clientType === "first_party" && (
-              <Badge variant="secondary" className="shrink-0 text-[10px]">
-                Official
-              </Badge>
-            )}
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Creato il{" "}
@@ -177,56 +194,6 @@ export default function ClientDetailView({
         </div>
       </div>
 
-      {/* Credentials quick-copy bar */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 space-y-1">
-              <Label className="text-xs text-muted-foreground">Client ID</Label>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-1.5 rounded-md text-xs font-mono truncate">
-                  {clientOAuthId}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0 h-8 w-8"
-                  onClick={() => copyToClipboard(clientOAuthId, "clientId")}
-                >
-                  {copiedField === "clientId" ? (
-                    <CheckIcon className="h-3.5 w-3.5 text-green-500" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            <div className="flex-1 space-y-1">
-              <Label className="text-xs text-muted-foreground uppercase">
-                Client Secret
-              </Label>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted px-3 py-1.5 rounded-md text-xs font-mono truncate">
-                  {clientSecret}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0 h-8 w-8"
-                  onClick={() => copyToClipboard(clientSecret, "clientSecret")}
-                >
-                  {copiedField === "clientSecret" ? (
-                    <CheckIcon className="h-3.5 w-3.5 text-green-500" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Tabs */}
       <Tabs defaultValue="users" className="space-y-6">
         <TabsList>
@@ -234,17 +201,13 @@ export default function ClientDetailView({
             <UsersIcon className="h-3.5 w-3.5" />
             Utenti
           </TabsTrigger>
+          <TabsTrigger value="integration" className="gap-1.5">
+            <CodeIcon className="h-3.5 w-3.5" />
+            Sviluppatori
+          </TabsTrigger>
           <TabsTrigger value="config" className="gap-1.5">
             <SettingsIcon className="h-3.5 w-3.5" />
             Configurazione
-          </TabsTrigger>
-          <TabsTrigger value="apikeys" className="gap-1.5">
-            <KeyIcon className="h-3.5 w-3.5" />
-            API Keys
-          </TabsTrigger>
-          <TabsTrigger value="integration" className="gap-1.5">
-            <CodeIcon className="h-3.5 w-3.5" />
-            Integrazione
           </TabsTrigger>
         </TabsList>
 
@@ -339,6 +302,194 @@ export default function ClientDetailView({
           </Card>
         </TabsContent>
 
+        {/* ── Integration Tab (Combined) ── */}
+        <TabsContent value="integration" className="space-y-6">
+          {/* 1. API Credentials (OAuth) */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">Credenziali OAuth 2.1</CardTitle>
+              <CardDescription>
+                Identificativi per il flusso di autenticazione degli utenti.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Client ID</Label>
+                  <div className="group relative flex items-center">
+                    <code className="w-full bg-muted/50 px-3 py-2 rounded-md text-xs font-mono border border-border/50 truncate pr-10">
+                      {clientOAuthId}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 h-7 w-7 opacity-70 hover:opacity-100"
+                      onClick={() => copyToClipboard(clientOAuthId, "clientId")}
+                    >
+                      {copiedField === "clientId" ? (
+                        <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+                      ) : (
+                        <Copy className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Client Secret</Label>
+                  <div className="group relative flex items-center gap-1">
+                    <code className="w-full bg-muted/50 px-3 py-2 rounded-md text-xs font-mono border border-border/50 truncate pr-16">
+                      {clientSecret}
+                    </code>
+                    <div className="absolute right-1 flex items-center gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-70 hover:opacity-100"
+                        onClick={() => copyToClipboard(clientSecret, "clientSecret")}
+                      >
+                        {copiedField === "clientSecret" ? (
+                          <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-70 hover:opacity-100"
+                        onClick={handleRotateSecret}
+                        disabled={secretLoading}
+                      >
+                        {secretLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCwIcon className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* OAuth Integration Guide */}
+              <div className="space-y-4 pt-4 border-t">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">1. Authorization URL</Label>
+                  <CodeBlock
+                    onCopy={copyToClipboard}
+                    copiedField={copiedField}
+                    field="authUrl"
+                    value={`${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/authorize?client_id=${clientOAuthId}&redirect_uri=YOUR_REDIRECT_URI&response_type=code&scope=openid+profile+email&code_challenge=...&code_challenge_method=S256`}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">2. Token Endpoint</Label>
+                  <CodeBlock
+                    onCopy={copyToClipboard}
+                    copiedField={copiedField}
+                    field="tokenUrl"
+                    value={`POST ${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/token`}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 2. API Key (Server-to-Server) */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold">API Key (Matching API)</CardTitle>
+              <CardDescription>
+                Chiave per l&apos;accesso diretto alle API di matching.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {apiKeys.length > 0 ? (
+                <div className="space-y-6">
+                  <div className="group relative flex items-center gap-2">
+                    <code className="w-full bg-muted/50 px-3 py-2 rounded-md text-xs font-mono border border-border/50 truncate pr-20">
+                      {apiKeys[0].key.substring(0, 8)}****************{apiKeys[0].key.slice(-4)}
+                    </code>
+                    <div className="absolute right-1 flex items-center gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-70 hover:opacity-100"
+                        onClick={() => copyToClipboard(apiKeys[0].key, "activeKey")}
+                      >
+                        {copiedField === "activeKey" ? (
+                          <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-70 hover:opacity-100"
+                        onClick={() => handleRotateApiKey(apiKeys[0].id)}
+                        disabled={keyLoading}
+                      >
+                        {keyLoading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCwIcon className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* GraphQL Integration Guide */}
+                  <div className="space-y-2 pt-4 border-t">
+                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">GraphQL Matching API</Label>
+                    <CodeBlock
+                      onCopy={copyToClipboard}
+                      copiedField={copiedField}
+                      field="graphql"
+                      value={`POST ${typeof window !== "undefined" ? window.location.origin : ""}/api/platform/v1/graphql\nHeaders: { "x-api-key": "YOUR_API_KEY" }\n\nquery {\n  findMatches(userId: "...", limit: 10) {\n    user { id name }\n    similarity\n    breakdown { psychological values interests behavioral }\n  }\n}`}
+                    />
+                  </div>
+
+                  {newKey && (
+                    <div className="p-3 bg-green-500/5 border border-green-500/20 rounded-lg space-y-2 animate-in fade-in slide-in-from-top-1">
+                      <p className="text-[11px] font-bold text-green-600 flex items-center gap-2 uppercase tracking-tight">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Nuova chiave generata! Copiala ora.
+                      </p>
+                      <div className="group relative flex items-center">
+                        <code className="w-full bg-background px-3 py-2 rounded border text-xs font-mono break-all pr-10">
+                          {newKey}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 h-7 w-7"
+                          onClick={() => copyToClipboard(newKey, "newKey")}
+                        >
+                          {copiedField === "newKey" ? (
+                            <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+                          ) : (
+                            <Copy className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Button size="sm" onClick={handleCreateApiKey} disabled={keyLoading}>
+                  {keyLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="mr-2 h-4 w-4" />
+                  )}
+                  Genera API Key
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* ── Config Tab ── */}
         <TabsContent value="config" className="space-y-6">
           <Card>
@@ -399,193 +550,6 @@ export default function ClientDetailView({
                 <Trash2 className="mr-2 h-4 w-4" />
                 Elimina Client
               </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── API Keys Tab ── */}
-        <TabsContent value="apikeys" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Genera API Key</CardTitle>
-              <CardDescription>
-                Crea chiavi server-to-server (M2M) per integrazioni backend.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form
-                onSubmit={handleCreateApiKey}
-                className="flex gap-3 items-end"
-              >
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="key-name">Nome chiave</Label>
-                  <Input
-                    id="key-name"
-                    name="name"
-                    placeholder="Es: Matcher Cron Job"
-                    required
-                  />
-                </div>
-                <Button type="submit" disabled={keyLoading}>
-                  {keyLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="mr-2 h-4 w-4" />
-                  )}
-                  Genera
-                </Button>
-              </form>
-
-              {newKey && (
-                <div className="mt-4 p-4 bg-green-500/5 border border-green-500/20 rounded-lg space-y-2">
-                  <p className="text-sm font-medium text-green-500 flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4" />
-                    Chiave generata! Copiala ora.
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-background p-2 rounded border text-xs break-all font-mono">
-                      {newKey}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => copyToClipboard(newKey, "newKey")}
-                    >
-                      {copiedField === "newKey" ? (
-                        <CheckIcon className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Chiavi attive</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="pl-6">Nome</TableHead>
-                    <TableHead>Prefisso</TableHead>
-                    <TableHead>Creata il</TableHead>
-                    <TableHead className="text-right pr-6">Azioni</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {apiKeys.map((key) => (
-                    <TableRow key={key.id}>
-                      <TableCell className="font-medium pl-6">
-                        {key.name}
-                      </TableCell>
-                      <TableCell>
-                        <code className="text-xs font-mono">
-                          {key.key.substring(0, 8)}…
-                        </code>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {new Date(key.createdAt).toLocaleDateString("it-IT")}
-                      </TableCell>
-                      <TableCell className="text-right pr-6">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDeleteApiKey(key.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {apiKeys.length === 0 && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={4}
-                        className="text-center py-8 text-muted-foreground"
-                      >
-                        Nessuna API Key generata.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── Integration Tab ── */}
-        <TabsContent value="integration">
-          <Card>
-            <CardHeader>
-              <CardTitle>Guida Rapida</CardTitle>
-              <CardDescription>
-                Configura il flusso OAuth 2.1 nella tua applicazione.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold">1. Authorization URL</h3>
-                <CodeBlock
-                  onCopy={copyToClipboard}
-                  copiedField={copiedField}
-                  field="authUrl"
-                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/authorize?client_id=${clientOAuthId}&redirect_uri=YOUR_REDIRECT_URI&response_type=code&scope=openid+profile+email&code_challenge=...&code_challenge_method=S256`}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold">2. Token Endpoint</h3>
-                <CodeBlock
-                  onCopy={copyToClipboard}
-                  copiedField={copiedField}
-                  field="tokenUrl"
-                  value={`POST ${typeof window !== "undefined" ? window.location.origin : ""}/api/auth/token`}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold">
-                  3. GraphQL Matching API
-                </h3>
-                <CodeBlock
-                  onCopy={copyToClipboard}
-                  copiedField={copiedField}
-                  field="graphql"
-                  value={`POST ${typeof window !== "undefined" ? window.location.origin : ""}/api/platform/v1/graphql\nHeaders: { "x-api-key": "YOUR_API_KEY" }\n\nquery {\n  findMatches(userId: "...", limit: 10) {\n    user { id name }\n    similarity\n    breakdown { psychological values interests behavioral }\n  }\n}`}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold">Endpoint utili</h3>
-                <div className="grid gap-2 text-sm">
-                  <div className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
-                    <span className="text-muted-foreground">
-                      OIDC Discovery
-                    </span>
-                    <code className="text-xs font-mono">
-                      /.well-known/openid-configuration
-                    </code>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
-                    <span className="text-muted-foreground">UserInfo</span>
-                    <code className="text-xs font-mono">
-                      /api/auth/userinfo
-                    </code>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
-                    <span className="text-muted-foreground">JWKS</span>
-                    <code className="text-xs font-mono">
-                      /api/auth/jwks
-                    </code>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>

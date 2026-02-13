@@ -7,15 +7,16 @@
 
 import { GraphQLError, GraphQLScalarType, Kind } from "graphql";
 import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { assessments, profiles } from "@/lib/schema";
-import { findMatches } from "@/lib/models/profiles/operations";
-import { assembleProfile } from "@/lib/models/assessments/assembler";
+import { findMatches, getProfileByUserId } from "@/lib/models/profiles/operations";
 import { upsertProfile } from "@/lib/models/profiles/operations";
+import { assembleProfile } from "@/lib/models/assessments/assembler";
+import {
+  insertAssessment,
+  findAssessmentByUserId,
+} from "@/lib/models/assessments/operations";
 import {
   QUESTIONS,
   SECTIONS,
-  ASSESSMENT_NAME,
 } from "@/lib/models/assessments/questions";
 
 // ============================================
@@ -25,7 +26,6 @@ import {
 export interface PlatformContext {
   client: {
     clientId: string; // OAuth client_id string
-    type: string | null; // "first_party" | "third_party" | null
     name: string | null;
   } | null;
 }
@@ -84,10 +84,9 @@ export const platformResolvers = {
     ) => {
       const client = requireClient(context);
 
-      const matches = await findMatches({
+      const matches = await findMatches(db, {
         userId: args.userId,
         clientId: client.clientId,
-        clientType: client.type || "third_party",
         limit: args.limit,
         gender: args.gender,
         minAge: args.minAge,
@@ -104,13 +103,10 @@ export const platformResolvers = {
     ) => {
       requireClient(context);
 
-      const assessment = await db.query.assessments.findFirst({
-        where: eq(assessments.userId, args.userId),
-      });
-
-      const profile = await db.query.profiles.findFirst({
-        where: eq(profiles.userId, args.userId),
-      });
+      const [assessment, profile] = await Promise.all([
+        findAssessmentByUserId(db, args.userId),
+        getProfileByUserId(db, args.userId),
+      ]);
 
       return {
         hasAssessment: !!assessment,
@@ -145,18 +141,16 @@ export const platformResolvers = {
       requireClient(context);
 
       // 1. Save assessment
-      await db.insert(assessments).values({
+      await insertAssessment(db, {
         userId: args.userId,
-        assessmentName: ASSESSMENT_NAME,
         answers: args.answers,
-        status: "completed",
       });
 
       // 2. Assemble profile text from answers
       const profileData = assembleProfile(args.answers);
 
       // 3. Generate embeddings and upsert profile
-      await upsertProfile(args.userId, profileData);
+      await upsertProfile(db, args.userId, profileData);
 
       return {
         success: true,

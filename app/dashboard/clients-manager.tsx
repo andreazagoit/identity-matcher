@@ -34,7 +34,6 @@ interface Client {
   id: string;
   name: string | null;
   clientId: string;
-  type: string | null;
 }
 
 export default function ClientsManager({ initialClients }: { initialClients: Client[] }) {
@@ -169,14 +168,7 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
               {initialClients.map((client) => (
                 <TableRow key={client.id}>
                   <TableCell className="font-medium pl-6">
-                    <div className="flex flex-col">
-                      <span>{client.name}</span>
-                      {client.type === 'first_party' && (
-                        <span className="text-[10px] text-blue-500 font-bold uppercase tracking-wider">
-                          Official App
-                        </span>
-                      )}
-                    </div>
+                    <span>{client.name}</span>
                   </TableCell>
                   <TableCell>
                     <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
