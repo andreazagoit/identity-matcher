@@ -43,6 +43,13 @@
       "when": 1771014001097,
       "tag": "0005_nebulous_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1771102609026,
+      "tag": "0006_red_iceman",
+      "breakpoints": true
     }
   ]
 }

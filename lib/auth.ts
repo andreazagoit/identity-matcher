@@ -2,7 +2,6 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { jwt } from "better-auth/plugins/jwt";
 import { oauthProvider } from "@better-auth/oauth-provider";
-import { apiKey } from "better-auth/plugins";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "./db";
 import * as schema from "./schema";
@@ -16,7 +15,7 @@ import * as schema from "./schema";
  *
  * Supported scopes:
  *   - openid: OpenID Connect identity
- *   - profile: Basic profile info (name, birthDate, gender)
+ *   - profile: Basic profile info (name, birthdate, gender)
  *   - email: Email address
  *   - offline_access: Refresh tokens
  */
@@ -28,6 +27,12 @@ export const auth = betterAuth({
 
   basePath: "/api/auth",
 
+  advanced: {
+    // Use a distinct cookie prefix so identitymatcher's session cookie
+    // doesn't collide with client apps on the same domain (e.g. localhost).
+    cookiePrefix: "idm",
+  },
+
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
@@ -36,25 +41,40 @@ export const auth = betterAuth({
 
   user: {
     additionalFields: {
-      firstName: {
+      givenName: {
         type: "string",
         required: true,
         input: true,
       },
-      lastName: {
+      familyName: {
         type: "string",
         required: true,
         input: true,
       },
-      birthDate: {
+      birthdate: {
         type: "string",
         required: true,
         input: true,
       },
       gender: {
         type: "string",
-        required: false,
+        required: true,
         input: true,
+      },
+      latitude: {
+        type: "number",
+        required: false,
+        input: false, // Updated via GraphQL only
+      },
+      longitude: {
+        type: "number",
+        required: false,
+        input: false,
+      },
+      locationUpdatedAt: {
+        type: "date",
+        required: false,
+        input: false,
       },
     },
   },
@@ -72,9 +92,25 @@ export const auth = betterAuth({
       consentPage: "/oauth2/consent",
       accessTokenExpiresIn: 3600, // 1 hour
       refreshTokenExpiresIn: 30 * 24 * 60 * 60, // 30 days
-      scopes: ["openid", "profile", "email", "offline_access"],
+      scopes: ["openid", "profile", "email", "offline_access", "location"],
+
+      // Include additional user fields in the /oauth2/userinfo response
+      // so client apps (e.g. @matcher) get the full profile after OAuth
+      customUserInfoClaims: ({ user }) => {
+        const locUpdated = user.locationUpdatedAt as Date | null | undefined;
+        return {
+          // OIDC standard claims (snake_case)
+          given_name: user.givenName,
+          family_name: user.familyName,
+          birthdate: user.birthdate,
+          gender: user.gender,
+          // Additional claims
+          latitude: user.latitude,
+          longitude: user.longitude,
+          locationUpdatedAt: locUpdated?.toISOString?.() || null,
+        };
+      },
     }),
-    apiKey(),
     nextCookies(),
   ],
 

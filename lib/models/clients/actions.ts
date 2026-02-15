@@ -9,6 +9,7 @@ import {
   updateClientConfig,
   removeClient,
   regenerateClientSecret,
+  regenerateApiKey,
 } from "./operations";
 
 export async function getClients() {
@@ -50,6 +51,12 @@ export async function updateClient(id: string, formData: FormData) {
 
 export async function rotateClientSecret(id: string) {
   const result = await regenerateClientSecret(db, id);
+  revalidatePath(`/dashboard/${id}`);
+  return result;
+}
+
+export async function rotateApiKey(id: string) {
+  const result = await regenerateApiKey(db, id);
   revalidatePath(`/dashboard/${id}`);
   return result;
 }

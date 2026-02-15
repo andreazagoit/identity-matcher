@@ -4,7 +4,7 @@
  * server-actions, API routes, **and** standalone scripts (seed).
  */
 
-import { assessments } from "@/lib/schema";
+import { assessments } from "./schema";
 import { eq } from "drizzle-orm";
 import { ASSESSMENT_NAME } from "./questions";
 import type { Db } from "@/lib/db";

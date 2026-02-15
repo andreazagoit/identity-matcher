@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { updateClient, deleteClient, rotateClientSecret } from "@/lib/models/clients/actions";
-import { createApiKey, deleteApiKey } from "@/lib/models/api-keys/actions";
+import { updateClient, deleteClient, rotateClientSecret, rotateApiKey } from "@/lib/models/clients/actions";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,26 +30,15 @@ import {
   CheckIcon,
   Loader2,
   Save,
-  Plus,
   Trash2,
-  ShieldCheck,
-  KeyIcon,
   SettingsIcon,
   CodeIcon,
   UsersIcon,
-  BrainCircuitIcon,
   UserCheckIcon,
   RefreshCwIcon,
 } from "lucide-react";
 import { RedirectUriManager } from "../redirect-uri-manager";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-interface ApiKey {
-  id: string;
-  name: string | null;
-  key: string;
-  createdAt: Date;
-}
 
 interface ClientUser {
   id: string;
@@ -68,14 +56,12 @@ interface ClientStats {
 
 interface ClientDetailViewProps {
   client: Record<string, unknown>;
-  apiKeys: ApiKey[];
   users: ClientUser[];
   stats: ClientStats;
 }
 
 export default function ClientDetailView({
   client,
-  apiKeys: initialApiKeys,
   users,
   stats,
 }: ClientDetailViewProps) {
@@ -85,6 +71,7 @@ export default function ClientDetailView({
   const clientSecret = client.clientSecret as string;
   const clientName = client.name as string;
   const clientRedirectUris = client.redirectUris as string[];
+  const apiKey = (client.apiKey as string) || null;
   const createdAt = client.createdAt as Date;
 
   // Config form
@@ -94,15 +81,9 @@ export default function ClientDetailView({
   // Copy states
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  // API Keys
-  const [apiKeys, setApiKeys] = useState(initialApiKeys);
+  // Loading states
   const [keyLoading, setKeyLoading] = useState(false);
-  const [newKey, setNewKey] = useState<string | null>(null);
   const [secretLoading, setSecretLoading] = useState(false);
-
-  async function handleRefresh() {
-    router.refresh();
-  }
 
   async function handleRotateSecret() {
     if (!confirm("Sei sicuro di voler rigenerare il Client Secret? Tutte le integrazioni esistenti che usano il vecchio secret smetteranno di funzionare.")) return;
@@ -140,32 +121,12 @@ export default function ClientDetailView({
     router.push("/dashboard");
   }
 
-  async function handleCreateApiKey() {
+  async function handleRotateApiKey() {
+    if (!confirm("Sei sicuro di voler rigenerare l'API Key? La vecchia chiave smetterà di funzionare immediatamente.")) return;
     setKeyLoading(true);
-    const formData = new FormData();
-    formData.append("clientId", clientId);
-    formData.append("name", "Default API Key");
-    const result = await createApiKey(formData);
-    if (result && "key" in result) {
-      setNewKey(result.key);
-      router.refresh();
-    }
+    await rotateApiKey(clientId);
     setKeyLoading(false);
-  }
-
-  async function handleRotateApiKey(id: string) {
-    if (!confirm("Sei sicuro di voler rigenerare questa chiave? La vecchia chiave smetterà di funzionare immediatamente.")) return;
-    setKeyLoading(true);
-    await deleteApiKey(id);
-    const formData = new FormData();
-    formData.append("clientId", clientId);
-    formData.append("name", "Default API Key");
-    const result = await createApiKey(formData);
-    if (result && "key" in result) {
-      setNewKey(result.key);
-      router.refresh();
-    }
-    setKeyLoading(false);
+    router.refresh();
   }
 
   return (
@@ -302,9 +263,9 @@ export default function ClientDetailView({
           </Card>
         </TabsContent>
 
-        {/* ── Integration Tab (Combined) ── */}
+        {/* ── Integration Tab ── */}
         <TabsContent value="integration" className="space-y-6">
-          {/* 1. API Credentials (OAuth) */}
+          {/* 1. OAuth Credentials */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">Credenziali OAuth 2.1</CardTitle>
@@ -400,24 +361,24 @@ export default function ClientDetailView({
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">API Key (Matching API)</CardTitle>
               <CardDescription>
-                Chiave per l&apos;accesso diretto alle API di matching.
+                Chiave per l&apos;accesso diretto alle API di matching server-to-server.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {apiKeys.length > 0 ? (
-                <div className="space-y-6">
+              <div className="space-y-6">
+                {apiKey ? (
                   <div className="group relative flex items-center gap-2">
                     <code className="w-full bg-muted/50 px-3 py-2 rounded-md text-xs font-mono border border-border/50 truncate pr-20">
-                      {apiKeys[0].key.substring(0, 8)}****************{apiKeys[0].key.slice(-4)}
+                      {apiKey.substring(0, 12)}••••••••••••••••••••
                     </code>
                     <div className="absolute right-1 flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 opacity-70 hover:opacity-100"
-                        onClick={() => copyToClipboard(apiKeys[0].key, "activeKey")}
+                        onClick={() => copyToClipboard(apiKey, "apiKey")}
                       >
-                        {copiedField === "activeKey" ? (
+                        {copiedField === "apiKey" ? (
                           <CheckIcon className="h-3.5 w-3.5 text-green-500" />
                         ) : (
                           <Copy className="h-3.5 w-3.5" />
@@ -427,8 +388,9 @@ export default function ClientDetailView({
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 opacity-70 hover:opacity-100"
-                        onClick={() => handleRotateApiKey(apiKeys[0].id)}
+                        onClick={handleRotateApiKey}
                         disabled={keyLoading}
+                        title="Rigenera API Key"
                       >
                         {keyLoading ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -438,54 +400,28 @@ export default function ClientDetailView({
                       </Button>
                     </div>
                   </div>
-                  
-                  {/* GraphQL Integration Guide */}
-                  <div className="space-y-2 pt-4 border-t">
-                    <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">GraphQL Matching API</Label>
-                    <CodeBlock
-                      onCopy={copyToClipboard}
-                      copiedField={copiedField}
-                      field="graphql"
-                      value={`POST ${typeof window !== "undefined" ? window.location.origin : ""}/api/platform/v1/graphql\nHeaders: { "x-api-key": "YOUR_API_KEY" }\n\nquery {\n  findMatches(userId: "...", limit: 10) {\n    user { id name }\n    similarity\n    breakdown { psychological values interests behavioral }\n  }\n}`}
-                    />
+                ) : (
+                  <div className="text-sm text-muted-foreground">
+                    Nessuna API key generata.{" "}
+                    <Button size="sm" variant="outline" onClick={handleRotateApiKey} disabled={keyLoading}>
+                      {keyLoading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
+                      Genera API Key
+                    </Button>
                   </div>
+                )}
 
-                  {newKey && (
-                    <div className="p-3 bg-green-500/5 border border-green-500/20 rounded-lg space-y-2 animate-in fade-in slide-in-from-top-1">
-                      <p className="text-[11px] font-bold text-green-600 flex items-center gap-2 uppercase tracking-tight">
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        Nuova chiave generata! Copiala ora.
-                      </p>
-                      <div className="group relative flex items-center">
-                        <code className="w-full bg-background px-3 py-2 rounded border text-xs font-mono break-all pr-10">
-                          {newKey}
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-1 h-7 w-7"
-                          onClick={() => copyToClipboard(newKey, "newKey")}
-                        >
-                          {copiedField === "newKey" ? (
-                            <CheckIcon className="h-3.5 w-3.5 text-green-500" />
-                          ) : (
-                            <Copy className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                {/* GraphQL Integration Guide */}
+                <div className="space-y-2 pt-4 border-t">
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">GraphQL Matching API</Label>
+                  <CodeBlock
+                    onCopy={copyToClipboard}
+                    copiedField={copiedField}
+                    field="graphql"
+                    value={`POST ${typeof window !== "undefined" ? window.location.origin : ""}/api/platform/v1/graphql\nHeaders: { "x-api-key": "YOUR_API_KEY" }\n\nquery {\n  findMatches(userId: "...", limit: 10) {\n    user { id name }\n    similarity\n    breakdown { psychological values interests behavioral }\n  }\n}`}
+                  />
                 </div>
-              ) : (
-                <Button size="sm" onClick={handleCreateApiKey} disabled={keyLoading}>
-                  {keyLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="mr-2 h-4 w-4" />
-                  )}
-                  Genera API Key
-                </Button>
-              )}
+
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -542,7 +478,7 @@ export default function ClientDetailView({
               </CardTitle>
               <CardDescription>
                 L&apos;eliminazione del client rimuoverà permanentemente tutte le
-                configurazioni e le API Key associate.
+                configurazioni associate.
               </CardDescription>
             </CardHeader>
             <CardContent>

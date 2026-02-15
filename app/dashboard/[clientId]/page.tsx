@@ -1,5 +1,4 @@
 import { getClientById } from "@/lib/models/clients/actions";
-import { getApiKeys } from "@/lib/models/api-keys/actions";
 import { getClientUsers, getClientStats } from "@/lib/models/users/actions";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
@@ -22,9 +21,8 @@ export default async function ClientDetailPage({
   }
 
   const { clientId } = await params;
-  const [client, apiKeys, users, stats] = await Promise.all([
+  const [client, users, stats] = await Promise.all([
     getClientById(clientId),
-    getApiKeys(clientId),
     getClientUsers(clientId),
     getClientStats(clientId),
   ]);
@@ -37,7 +35,6 @@ export default async function ClientDetailPage({
     <Container className="py-8">
       <ClientDetailView
         client={client as Record<string, unknown>}
-        apiKeys={apiKeys}
         users={users}
         stats={stats}
       />

@@ -56,11 +56,11 @@ export const platformTypeDefs = gql`
   type MatchUser {
     id: ID!
     name: String!
-    firstName: String!
-    lastName: String!
+    givenName: String!
+    familyName: String!
     image: String
     gender: String
-    birthDate: String!
+    birthdate: String!
   }
 
   type MatchBreakdown {

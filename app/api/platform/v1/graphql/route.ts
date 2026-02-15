@@ -18,10 +18,8 @@ import {
   platformResolvers,
   type PlatformContext,
 } from "@/lib/graphql/platform/resolvers";
-import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { apikey, oauthClient } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { findClientByApiKey } from "@/lib/models/clients/operations";
 
 // ============================================
 // APOLLO SERVER
@@ -39,7 +37,6 @@ const server = new ApolloServer<PlatformContext>({
 async function getClientFromApiKey(
   req: NextRequest,
 ): Promise<PlatformContext["client"]> {
-  // Extract API key from header
   const authHeader = req.headers.get("authorization");
   const apiKeyHeader = req.headers.get("x-api-key");
 
@@ -48,26 +45,9 @@ async function getClientFromApiKey(
   if (!key) return null;
 
   try {
-    // Verify API key via better-auth
-    const result = await auth.api.verifyApiKey({
-      body: { key },
-    });
+    const client = await findClientByApiKey(db, key);
 
-    if (!result?.valid || !result.key) return null;
-
-    // Get the API key record to find associated client
-    const keyRecord = await db.query.apikey.findFirst({
-      where: eq(apikey.id, result.key.id),
-    });
-
-    if (!keyRecord?.clientId) return null;
-
-    // Get the OAuth client details
-    const client = await db.query.oauthClient.findFirst({
-      where: eq(oauthClient.id, keyRecord.clientId),
-    });
-
-    if (!client) return null;
+    if (!client || client.disabled) return null;
 
     return {
       clientId: client.clientId,

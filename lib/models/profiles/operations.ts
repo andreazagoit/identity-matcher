@@ -9,13 +9,13 @@
 
 import { eq, ne, sql, and, inArray } from "drizzle-orm";
 import { cosineDistance } from "drizzle-orm";
+import { user } from "@/lib/models/users/schema";
+import { oauthConsent } from "@/lib/models/clients/schema";
 import {
-  user,
   profiles,
-  oauthConsent,
   DEFAULT_MATCHING_WEIGHTS,
   type profiles as ProfilesTable,
-} from "@/lib/schema";
+} from "./schema";
 import { generateAllUserEmbeddings } from "@/lib/embeddings";
 import type { ProfileData } from "@/lib/models/assessments/assembler";
 import type { Db } from "@/lib/db";
@@ -31,11 +31,11 @@ export interface ProfileMatch {
   user: {
     id: string;
     name: string;
-    firstName: string;
-    lastName: string;
+    givenName: string;
+    familyName: string;
     image: string | null;
     gender: string | null;
-    birthDate: string;
+    birthdate: string;
   };
   similarity: number;
   breakdown: {
@@ -196,13 +196,13 @@ export async function findMatches(
 
   if (minAge !== undefined) {
     filterConditions.push(
-      sql`EXTRACT(YEAR FROM AGE(CAST(${user.birthDate} AS DATE))) >= ${minAge}`,
+      sql`EXTRACT(YEAR FROM AGE(CAST(${user.birthdate} AS DATE))) >= ${minAge}`,
     );
   }
 
   if (maxAge !== undefined) {
     filterConditions.push(
-      sql`EXTRACT(YEAR FROM AGE(CAST(${user.birthDate} AS DATE))) <= ${maxAge}`,
+      sql`EXTRACT(YEAR FROM AGE(CAST(${user.birthdate} AS DATE))) <= ${maxAge}`,
     );
   }
 
@@ -276,11 +276,11 @@ export async function findMatches(
       user: {
         id: candidate.user.id,
         name: candidate.user.name,
-        firstName: candidate.user.firstName,
-        lastName: candidate.user.lastName,
+        givenName: candidate.user.givenName,
+        familyName: candidate.user.familyName,
         image: candidate.user.image,
         gender: candidate.user.gender,
-        birthDate: candidate.user.birthDate,
+        birthdate: candidate.user.birthdate,
       },
       similarity,
       breakdown: {

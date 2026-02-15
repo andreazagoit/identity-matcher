@@ -47,14 +47,14 @@ export default function AccountForm({
   hasCompletedAssessment,
 }: AccountFormProps) {
   // Profile state
-  const [firstName, setFirstName] = useState(
-    (user.firstName as string) || ""
+  const [givenName, setGivenName] = useState(
+    (user.givenName as string) || ""
   );
-  const [lastName, setLastName] = useState(
-    (user.lastName as string) || ""
+  const [familyName, setFamilyName] = useState(
+    (user.familyName as string) || ""
   );
-  const [birthDate, setBirthDate] = useState(
-    (user.birthDate as string) || ""
+  const [birthdate, setBirthdate] = useState(
+    (user.birthdate as string) || ""
   );
   const [gender, setGender] = useState((user.gender as string) || "");
   const [profileLoading, setProfileLoading] = useState(false);
@@ -83,10 +83,10 @@ export default function AccountForm({
 
     try {
       const result = await authClient.updateUser({
-        name: `${firstName} ${lastName}`,
-        firstName,
-        lastName,
-        birthDate,
+        name: `${givenName} ${familyName}`,
+        givenName,
+        familyName,
+        birthdate,
         gender: gender || undefined,
       } as Record<string, unknown>);
 
@@ -264,21 +264,21 @@ export default function AccountForm({
           <form onSubmit={handleProfileUpdate} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="firstName">Nome</Label>
+                <Label htmlFor="givenName">Nome</Label>
                 <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  id="givenName"
+                  value={givenName}
+                  onChange={(e) => setGivenName(e.target.value)}
                   required
                   placeholder="Mario"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName">Cognome</Label>
+                <Label htmlFor="familyName">Cognome</Label>
                 <Input
-                  id="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  id="familyName"
+                  value={familyName}
+                  onChange={(e) => setFamilyName(e.target.value)}
                   required
                   placeholder="Rossi"
                 />
@@ -287,12 +287,12 @@ export default function AccountForm({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="birthDate">Data di nascita</Label>
+                <Label htmlFor="birthdate">Data di nascita</Label>
                 <Input
-                  id="birthDate"
+                  id="birthdate"
                   type="date"
-                  value={birthDate}
-                  onChange={(e) => setBirthDate(e.target.value)}
+                  value={birthdate}
+                  onChange={(e) => setBirthdate(e.target.value)}
                   required
                 />
               </div>

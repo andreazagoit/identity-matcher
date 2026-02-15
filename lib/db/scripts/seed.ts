@@ -42,99 +42,99 @@ const DEMO_CLIENT = {
   clientId: "idm_demo_client",
   clientSecret: "idm_demo_secret_change_me_in_production",
   name: "Demo App",
-  redirectUris: ["http://localhost:3000/api/auth/callback/identitymatcher"],
+  redirectUris: ["http://localhost:3000/api/auth/oauth2/callback/identitymatcher"],
 } as const;
 
 // ── Seed Users ─────────────────────────────────────────────────────
 
 const ADMIN_USER = {
   name: "Admin Service",
-  firstName: "Admin",
-  lastName: "Service",
+  givenName: "Admin",
+  familyName: "Service",
   email: "admin@identitymatcher.local",
-  birthDate: "1990-01-01",
+  birthdate: "1990-01-01",
   gender: "man",
 };
 
 const SEED_USERS = [
   {
     name: "Mario Rossi",
-    firstName: "Mario",
-    lastName: "Rossi",
+    givenName: "Mario",
+    familyName: "Rossi",
     email: "mario.rossi@example.com",
-    birthDate: "1995-03-15",
+    birthdate: "1995-03-15",
     gender: "man",
   },
   {
     name: "Laura Bianchi",
-    firstName: "Laura",
-    lastName: "Bianchi",
+    givenName: "Laura",
+    familyName: "Bianchi",
     email: "laura.bianchi@example.com",
-    birthDate: "1998-07-22",
+    birthdate: "1998-07-22",
     gender: "woman",
   },
   {
     name: "Alessandro Verdi",
-    firstName: "Alessandro",
-    lastName: "Verdi",
+    givenName: "Alessandro",
+    familyName: "Verdi",
     email: "alessandro.verdi@example.com",
-    birthDate: "1992-11-08",
+    birthdate: "1992-11-08",
     gender: "man",
   },
   {
     name: "Giulia Neri",
-    firstName: "Giulia",
-    lastName: "Neri",
+    givenName: "Giulia",
+    familyName: "Neri",
     email: "giulia.neri@example.com",
-    birthDate: "1996-05-30",
+    birthdate: "1996-05-30",
     gender: "woman",
   },
   {
     name: "Marco Ferrari",
-    firstName: "Marco",
-    lastName: "Ferrari",
+    givenName: "Marco",
+    familyName: "Ferrari",
     email: "marco.ferrari@example.com",
-    birthDate: "1994-01-20",
+    birthdate: "1994-01-20",
     gender: "man",
   },
   {
     name: "Sofia Romano",
-    firstName: "Sofia",
-    lastName: "Romano",
+    givenName: "Sofia",
+    familyName: "Romano",
     email: "sofia.romano@example.com",
-    birthDate: "1997-09-12",
+    birthdate: "1997-09-12",
     gender: "woman",
   },
   {
     name: "Luca Colombo",
-    firstName: "Luca",
-    lastName: "Colombo",
+    givenName: "Luca",
+    familyName: "Colombo",
     email: "luca.colombo@example.com",
-    birthDate: "1993-06-25",
+    birthdate: "1993-06-25",
     gender: "man",
   },
   {
     name: "Emma Ricci",
-    firstName: "Emma",
-    lastName: "Ricci",
+    givenName: "Emma",
+    familyName: "Ricci",
     email: "emma.ricci@example.com",
-    birthDate: "1999-02-14",
+    birthdate: "1999-02-14",
     gender: "woman",
   },
   {
     name: "Andrea Marino",
-    firstName: "Andrea",
-    lastName: "Marino",
+    givenName: "Andrea",
+    familyName: "Marino",
     email: "andrea.marino@example.com",
-    birthDate: "1991-12-03",
+    birthdate: "1991-12-03",
     gender: "man",
   },
   {
     name: "Chiara Greco",
-    firstName: "Chiara",
-    lastName: "Greco",
+    givenName: "Chiara",
+    familyName: "Greco",
     email: "chiara.greco@example.com",
-    birthDate: "1996-08-18",
+    birthdate: "1996-08-18",
     gender: "woman",
   },
 ];
@@ -208,21 +208,21 @@ async function seed() {
     // ── 2. Create default OAuth clients ──
     console.log("\n🔑 Creating default OAuth clients...");
 
-    await insertClient(db, {
+    const svcResult = await insertClient(db, {
       ...SERVICE_CLIENT,
       userId: adminUser.id,
     });
     console.log(`  ✓ Service client: ${SERVICE_CLIENT.name}`);
     console.log(`    Client ID: ${SERVICE_CLIENT.clientId}`);
-    console.log(`    Redirect:  ${SERVICE_CLIENT.redirectUris[0]}`);
+    console.log(`    API Key:   ${svcResult.apiKey}`);
 
-    await insertClient(db, {
+    const demoResult = await insertClient(db, {
       ...DEMO_CLIENT,
       userId: adminUser.id,
     });
     console.log(`  ✓ Demo client:    ${DEMO_CLIENT.name}`);
     console.log(`    Client ID: ${DEMO_CLIENT.clientId}`);
-    console.log(`    Redirect:  ${DEMO_CLIENT.redirectUris[0]}`);
+    console.log(`    API Key:   ${demoResult.apiKey}`);
 
     // ── 3. Create test users with assessments + profiles ──
     console.log(
@@ -246,7 +246,7 @@ async function seed() {
       await upsertProfile(db, user.id, profileData, 1);
 
       console.log(
-        `  ✓ ${i + 1}/${SEED_USERS.length} - ${userData.firstName} ${userData.lastName}`,
+        `  ✓ ${i + 1}/${SEED_USERS.length} - ${userData.givenName} ${userData.familyName}`,
       );
     }
 
@@ -260,10 +260,10 @@ async function seed() {
     console.log("═".repeat(50));
     console.log("\n📋 Default OAuth Clients:");
     console.log(
-      `   Service:  clientId=${SERVICE_CLIENT.clientId}  secret=${SERVICE_CLIENT.clientSecret}`,
+      `   Service:  clientId=${SERVICE_CLIENT.clientId}  secret=${SERVICE_CLIENT.clientSecret}  apiKey=${svcResult.apiKey}`,
     );
     console.log(
-      `   Demo:     clientId=${DEMO_CLIENT.clientId}  secret=${DEMO_CLIENT.clientSecret}`,
+      `   Demo:     clientId=${DEMO_CLIENT.clientId}  secret=${DEMO_CLIENT.clientSecret}  apiKey=${demoResult.apiKey}`,
     );
   } catch (error) {
     console.error("❌ Seed failed:", error);

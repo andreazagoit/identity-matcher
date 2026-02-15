@@ -4,17 +4,17 @@
  * server-actions (singleton db) **and** standalone scripts (seed).
  */
 
-import { oauthClient } from "@/lib/schema";
+import { oauthClient } from "./schema";
 import { eq } from "drizzle-orm";
 import { generateRandomString } from "better-auth/crypto";
 import type { Db } from "@/lib/db";
 
-/** Fixed OAuth 2.1 defaults applied to every client. */
-export const OAUTH_DEFAULTS = {
-  grantTypes: ["authorization_code", "refresh_token"],
-  responseTypes: ["code"],
-  scopes: ["openid", "profile", "email", "offline_access"],
-} as const;
+/** Hash a secret via SHA-256 → base64url (same as @better-auth/oauth-provider). */
+async function hashSecret(secret: string): Promise<string> {
+  const data = new TextEncoder().encode(secret);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Buffer.from(hash).toString("base64url");
+}
 
 // ── CREATE ───────────────────────────────────────────────────────
 
@@ -31,24 +31,24 @@ export interface InsertClientOpts {
 export async function insertClient(db: Db, opts: InsertClientOpts) {
   const id = opts.id ?? generateRandomString(16);
   const clientId = opts.clientId ?? generateRandomString(32);
-  const clientSecret = opts.clientSecret ?? generateRandomString(32);
+  const clientSecretPlain = opts.clientSecret ?? generateRandomString(32);
+  const clientSecretHashed = await hashSecret(clientSecretPlain);
+  const apiKey = `idm_${generateRandomString(40)}`;
   const now = new Date();
 
   await db.insert(oauthClient).values({
     id,
     clientId,
-    clientSecret,
+    clientSecret: clientSecretHashed,
     name: opts.name,
     redirectUris: [...opts.redirectUris],
-    grantTypes: [...OAUTH_DEFAULTS.grantTypes],
-    responseTypes: [...OAUTH_DEFAULTS.responseTypes],
-    scopes: [...OAUTH_DEFAULTS.scopes],
     userId: opts.userId,
+    apiKey,
     createdAt: now,
     updatedAt: now,
   });
 
-  return { id, clientId, clientSecret };
+  return { id, clientId, clientSecret: clientSecretPlain, apiKey };
 }
 
 // ── READ ─────────────────────────────────────────────────────────
@@ -84,16 +84,41 @@ export async function updateClientConfig(
 
 export async function regenerateClientSecret(db: Db, id: string) {
   const newSecret = generateRandomString(32);
+  const hashedSecret = await hashSecret(newSecret);
 
   await db
     .update(oauthClient)
     .set({
-      clientSecret: newSecret,
+      clientSecret: hashedSecret,
       updatedAt: new Date(),
     })
     .where(eq(oauthClient.id, id));
 
   return { clientSecret: newSecret };
+}
+
+// ── API KEY ─────────────────────────────────────────────────────
+
+/** Regenerate the API key for a client. */
+export async function regenerateApiKey(db: Db, id: string) {
+  const apiKey = `idm_${generateRandomString(40)}`;
+
+  await db
+    .update(oauthClient)
+    .set({
+      apiKey,
+      updatedAt: new Date(),
+    })
+    .where(eq(oauthClient.id, id));
+
+  return { apiKey };
+}
+
+/** Find a client by its API key (plain text lookup). */
+export async function findClientByApiKey(db: Db, key: string) {
+  return await db.query.oauthClient.findFirst({
+    where: eq(oauthClient.apiKey, key),
+  });
 }
 
 // ── DELETE ───────────────────────────────────────────────────────
