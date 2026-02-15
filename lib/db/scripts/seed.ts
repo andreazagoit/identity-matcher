@@ -42,7 +42,10 @@ const DEMO_CLIENT = {
   clientId: "idm_demo_client",
   clientSecret: "idm_demo_secret_change_me_in_production",
   name: "Demo App",
-  redirectUris: ["http://localhost:3000/api/auth/oauth2/callback/identitymatcher"],
+  redirectUris: [
+    "http://localhost:3000/api/auth/oauth2/callback/identitymatcher",
+    "https://matcher-blond.vercel.app/api/auth/oauth2/callback/identitymatcher",
+  ],
 } as const;
 
 // ── Seed Users ─────────────────────────────────────────────────────
