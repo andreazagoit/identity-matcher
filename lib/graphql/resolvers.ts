@@ -1,9 +1,14 @@
 /**
- * Client API - GraphQL Resolvers
+ * Unified GraphQL Resolvers
  *
- * All queries are authenticated via OAuth 2.1 access token.
- * The context contains the authenticated user and client info
- * extracted from the verified JWT.
+ * Supports dual authentication:
+ *   - OAuth 2.1 access token → context.userId is set
+ *   - API key → context.clientId is set (no userId)
+ *
+ * Shared operations (findMatches, profileStatus, submitAssessment)
+ * resolve userId from either the arg or the authenticated user.
+ *
+ * User-only operations (me, updateUser, updateLocation) require OAuth.
  */
 
 import { GraphQLError, GraphQLScalarType, Kind } from "graphql";
@@ -20,10 +25,7 @@ import {
   insertAssessment,
   findAssessmentByUserId,
 } from "@/lib/models/assessments/operations";
-import {
-  QUESTIONS,
-  SECTIONS,
-} from "@/lib/models/assessments/questions";
+import { QUESTIONS, SECTIONS } from "@/lib/models/assessments/questions";
 import {
   updateUser,
   updateUserLocation,
@@ -34,11 +36,13 @@ import {
 // CONTEXT TYPE
 // ============================================
 
-export interface ClientContext {
-  /** Authenticated user ID (from JWT sub claim) */
+export interface GraphQLContext {
+  /** Authenticated user ID (from OAuth JWT sub claim). Null for API key auth. */
   userId: string | null;
-  /** OAuth client_id (from JWT aud or azp claim) */
+  /** OAuth client_id (from JWT) or API key client_id. */
   clientId: string | null;
+  /** How the caller authenticated. */
+  authType: "oauth" | "apikey" | null;
 }
 
 // ============================================
@@ -60,31 +64,78 @@ const JSONScalar = new GraphQLScalarType({
 });
 
 // ============================================
-// AUTH GUARD
+// AUTH HELPERS
 // ============================================
 
-function requireAuth(context: ClientContext): {
-  userId: string;
-  clientId: string | null;
-} {
-  if (!context.userId) {
-    throw new GraphQLError("Unauthorized: valid access token required", {
+/** Require any form of authentication. */
+function requireAuth(ctx: GraphQLContext) {
+  if (!ctx.authType) {
+    throw new GraphQLError("Unauthorized: valid access token or API key required", {
       extensions: { code: "UNAUTHORIZED" },
     });
   }
-  return { userId: context.userId, clientId: context.clientId };
+  return ctx;
+}
+
+/** Require OAuth user authentication specifically. */
+function requireOAuth(ctx: GraphQLContext): { userId: string; clientId: string | null } {
+  if (ctx.authType !== "oauth" || !ctx.userId) {
+    throw new GraphQLError("Unauthorized: this operation requires a user access token", {
+      extensions: { code: "UNAUTHORIZED" },
+    });
+  }
+  return { userId: ctx.userId, clientId: ctx.clientId };
+}
+
+/**
+ * Resolve the target userId for shared operations.
+ *
+ * Security rules:
+ *   - OAuth → always uses the authenticated user. If a userId arg is
+ *     provided and differs from the token's user, the request is rejected.
+ *   - API key → userId arg is required (server-to-server is trusted).
+ */
+function resolveUserId(ctx: GraphQLContext, argUserId?: string | null): string {
+  requireAuth(ctx);
+
+  if (ctx.authType === "oauth" && ctx.userId) {
+    // OAuth users can only operate on themselves
+    if (argUserId && argUserId !== ctx.userId) {
+      throw new GraphQLError(
+        "Forbidden: you can only perform this operation on your own account",
+        { extensions: { code: "FORBIDDEN" } },
+      );
+    }
+    return ctx.userId;
+  }
+
+  if (ctx.authType === "apikey") {
+    if (!argUserId) {
+      throw new GraphQLError(
+        "userId is required when authenticating with an API key",
+        { extensions: { code: "BAD_USER_INPUT" } },
+      );
+    }
+    return argUserId;
+  }
+
+  throw new GraphQLError("Unauthorized", {
+    extensions: { code: "UNAUTHORIZED" },
+  });
 }
 
 // ============================================
 // RESOLVERS
 // ============================================
 
-export const clientResolvers = {
+export const resolvers = {
   JSON: JSONScalar,
 
   Query: {
-    me: async (_: unknown, __: unknown, context: ClientContext) => {
-      const { userId } = requireAuth(context);
+    health: () => "Identity Matcher API is operational",
+
+    me: async (_: unknown, __: unknown, ctx: GraphQLContext) => {
+      const { userId } = requireOAuth(ctx);
 
       const result = await db.query.user.findFirst({
         where: eq(userTable.id, userId),
@@ -103,12 +154,16 @@ export const clientResolvers = {
       };
     },
 
-    profileStatus: async (_: unknown, __: unknown, context: ClientContext) => {
-      const { userId } = requireAuth(context);
+    profileStatus: async (
+      _: unknown,
+      args: { userId?: string },
+      ctx: GraphQLContext,
+    ) => {
+      const userId = resolveUserId(ctx, args.userId);
 
       const [assessment, profile] = await Promise.all([
-        findAssessmentByUserId(db, userId),
-        getProfileByUserId(db, userId),
+        findAssessmentByUserId(userId),
+        getProfileByUserId(userId),
       ]);
 
       return {
@@ -137,18 +192,19 @@ export const clientResolvers = {
     findMatches: async (
       _: unknown,
       args: {
+        userId?: string;
         limit?: number;
         gender?: string[];
         minAge?: number;
         maxAge?: number;
       },
-      context: ClientContext,
+      ctx: GraphQLContext,
     ) => {
-      const { userId, clientId } = requireAuth(context);
+      const userId = resolveUserId(ctx, args.userId);
 
-      const matches = await findMatches(db, {
+      const matches = await findMatches({
         userId,
-        clientId: clientId || undefined,
+        clientId: ctx.clientId || undefined,
         limit: args.limit,
         gender: args.gender,
         minAge: args.minAge,
@@ -162,37 +218,31 @@ export const clientResolvers = {
   Mutation: {
     submitAssessment: async (
       _: unknown,
-      args: { answers: Record<string, number | string> },
-      context: ClientContext,
+      args: { userId?: string; answers: Record<string, number | string> },
+      ctx: GraphQLContext,
     ) => {
-      const { userId } = requireAuth(context);
+      const userId = resolveUserId(ctx, args.userId);
 
       // 1. Save assessment
-      await insertAssessment(db, {
-        userId,
-        answers: args.answers,
-      });
+      await insertAssessment({ userId, answers: args.answers });
 
       // 2. Assemble profile text from answers
       const profileData = assembleProfile(args.answers);
 
       // 3. Generate embeddings and upsert profile
-      await upsertProfile(db, userId, profileData);
+      await upsertProfile(userId, profileData);
 
-      return {
-        success: true,
-        profileComplete: true,
-      };
+      return { success: true, profileComplete: true };
     },
 
     updateUser: async (
       _: unknown,
       args: { input: UpdateUserOpts },
-      context: ClientContext,
+      ctx: GraphQLContext,
     ) => {
-      const { userId } = requireAuth(context);
+      const { userId } = requireOAuth(ctx);
 
-      const updated = await updateUser(db, userId, args.input);
+      const updated = await updateUser(userId, args.input);
 
       if (!updated) {
         throw new GraphQLError("User not found", {
@@ -210,11 +260,10 @@ export const clientResolvers = {
     updateLocation: async (
       _: unknown,
       args: { latitude: number; longitude: number },
-      context: ClientContext,
+      ctx: GraphQLContext,
     ) => {
-      const { userId } = requireAuth(context);
+      const { userId } = requireOAuth(ctx);
 
-      // Validate coordinates
       if (args.latitude < -90 || args.latitude > 90) {
         throw new GraphQLError("Invalid latitude: must be between -90 and 90", {
           extensions: { code: "BAD_USER_INPUT" },
@@ -226,7 +275,7 @@ export const clientResolvers = {
         });
       }
 
-      const updated = await updateUserLocation(db, userId, args.latitude, args.longitude);
+      const updated = await updateUserLocation(userId, args.latitude, args.longitude);
 
       if (!updated) {
         throw new GraphQLError("User not found", {

@@ -8,7 +8,6 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { db } from "@/lib/db";
 import { insertAssessment } from "@/lib/models/assessments/operations";
 import { assembleProfile } from "@/lib/models/assessments/assembler";
 import { upsertProfile } from "@/lib/models/profiles/operations";
@@ -32,13 +31,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Save assessment
-    const assessment = await insertAssessment(db, { userId, answers });
+    const assessment = await insertAssessment({ userId, answers });
 
     // 2. Assemble profile data from answers
     const profileData = assembleProfile(answers);
 
     // 3. Generate embeddings and save profile
-    const profile = await upsertProfile(db, userId, profileData, 1);
+    const profile = await upsertProfile(userId, profileData, 1);
 
     return Response.json({
       success: true,

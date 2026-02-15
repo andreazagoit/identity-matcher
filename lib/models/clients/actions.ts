@@ -1,6 +1,5 @@
 "use server";
 
-import { db } from "@/lib/db";
 import { revalidatePath } from "next/cache";
 import {
   findAllClients,
@@ -13,7 +12,7 @@ import {
 } from "./operations";
 
 export async function getClients() {
-  return await findAllClients(db);
+  return await findAllClients();
 }
 
 export async function createClient(formData: FormData) {
@@ -22,19 +21,19 @@ export async function createClient(formData: FormData) {
     .split(",")
     .map((uri) => uri.trim());
 
-  const result = await insertClient(db, { name, redirectUris });
+  const result = await insertClient({ name, redirectUris });
 
   revalidatePath("/dashboard");
   return result;
 }
 
 export async function deleteClient(id: string) {
-  await removeClient(db, id);
+  await removeClient(id);
   revalidatePath("/dashboard");
 }
 
 export async function getClientById(id: string) {
-  return await findClientById(db, id);
+  return await findClientById(id);
 }
 
 export async function updateClient(id: string, formData: FormData) {
@@ -43,20 +42,20 @@ export async function updateClient(id: string, formData: FormData) {
     .split(",")
     .map((uri) => uri.trim());
 
-  await updateClientConfig(db, id, { name, redirectUris });
+  await updateClientConfig(id, { name, redirectUris });
 
   revalidatePath("/dashboard");
   revalidatePath(`/dashboard/${id}`);
 }
 
 export async function rotateClientSecret(id: string) {
-  const result = await regenerateClientSecret(db, id);
+  const result = await regenerateClientSecret(id);
   revalidatePath(`/dashboard/${id}`);
   return result;
 }
 
 export async function rotateApiKey(id: string) {
-  const result = await regenerateApiKey(db, id);
+  const result = await regenerateApiKey(id);
   revalidatePath(`/dashboard/${id}`);
   return result;
 }

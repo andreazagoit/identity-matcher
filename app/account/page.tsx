@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Container } from "@/components/container";
@@ -17,7 +16,7 @@ export default async function AccountPage() {
 
   const [sessions, profileComplete] = await Promise.all([
     auth.api.listSessions({ headers: await headers() }),
-    hasCompleteProfile(db, session.user.id),
+    hasCompleteProfile(session.user.id),
   ]);
 
   return (

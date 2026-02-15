@@ -1,13 +1,11 @@
 /**
- * Assessments – pure DB operations.
- * Every function receives `db` so it can be called from
- * server-actions, API routes, **and** standalone scripts (seed).
+ * Assessments – DB operations.
  */
 
+import { db } from "@/lib/db";
 import { assessments } from "./schema";
 import { eq } from "drizzle-orm";
 import { ASSESSMENT_NAME } from "./questions";
-import type { Db } from "@/lib/db";
 
 // ── CREATE ───────────────────────────────────────────────────────
 
@@ -18,7 +16,7 @@ export interface InsertAssessmentOpts {
   status?: "in_progress" | "completed";
 }
 
-export async function insertAssessment(db: Db, opts: InsertAssessmentOpts) {
+export async function insertAssessment(opts: InsertAssessmentOpts) {
   const [assessment] = await db
     .insert(assessments)
     .values({
@@ -35,7 +33,7 @@ export async function insertAssessment(db: Db, opts: InsertAssessmentOpts) {
 
 // ── READ ─────────────────────────────────────────────────────────
 
-export async function findAssessmentByUserId(db: Db, userId: string) {
+export async function findAssessmentByUserId(userId: string) {
   return await db.query.assessments.findFirst({
     where: eq(assessments.userId, userId),
   });

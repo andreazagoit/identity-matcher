@@ -1,35 +1,52 @@
 import { gql } from "graphql-tag";
 
 /**
- * Client API - GraphQL Schema
+ * Unified GraphQL Schema
  *
- * Consumed by client apps (e.g. @matcher) after OAuth authentication.
- * Authenticated via OAuth 2.1 access token (Bearer token).
+ * Single endpoint supporting dual authentication:
+ *   - OAuth 2.1 access token (user-scoped, from client apps)
+ *   - API key (server-to-server, from backend services)
  *
- * All queries are scoped to the authenticated user unless stated otherwise.
+ * Operations that accept `userId` are flexible:
+ *   - OAuth auth → userId is optional (defaults to authenticated user)
+ *   - API key auth → userId is required
+ *
+ * Operations marked "OAuth only" require a user access token.
  */
-export const clientTypeDefs = gql`
+export const typeDefs = gql`
+  scalar JSON
+
   type Query {
     """
-    Get the authenticated user's basic info
+    API health check. No auth required.
+    """
+    health: String!
+
+    """
+    Get the authenticated user's info.
+    Requires OAuth access token.
     """
     me: User!
 
     """
-    Get the authenticated user's profile status (assessment + embeddings)
+    Get a user's profile status (assessment completion + embeddings).
+    OAuth: userId optional (defaults to self).
+    API key: userId required.
     """
-    profileStatus: ProfileStatus!
+    profileStatus(userId: ID): ProfileStatus!
 
     """
-    Get the assessment questionnaire definition
+    Get the assessment questionnaire definition.
     """
     assessmentQuestions: [AssessmentSection!]!
 
     """
-    Find compatible matches for the authenticated user.
-    Results are scoped to users of the same client app.
+    Find compatible matches for a user.
+    OAuth: userId optional (defaults to self).
+    API key: userId required.
     """
     findMatches(
+      userId: ID
       limit: Int
       gender: [String!]
       minAge: Int
@@ -39,27 +56,29 @@ export const clientTypeDefs = gql`
 
   type Mutation {
     """
-    Submit a completed assessment for the authenticated user.
-    Generates profile and vector embeddings.
+    Submit a completed assessment for a user.
+    Generates profile descriptions and vector embeddings.
+    OAuth: userId optional (defaults to self).
+    API key: userId required.
     """
-    submitAssessment(answers: JSON!): SubmitAssessmentResult!
+    submitAssessment(userId: ID, answers: JSON!): SubmitAssessmentResult!
 
     """
     Update the authenticated user's basic profile info.
     Only provided fields are updated.
+    Requires OAuth access token.
     """
     updateUser(input: UpdateUserInput!): User!
 
     """
     Update the authenticated user's GPS location.
     Subject to rate limiting and velocity checks.
+    Requires OAuth access token.
     """
     updateLocation(latitude: Float!, longitude: Float!): LocationResult!
   }
 
-  # ============================================
-  # TYPES
-  # ============================================
+  # ── Types ──────────────────────────────────────────────────────────
 
   type User {
     id: ID!
@@ -140,9 +159,4 @@ export const clientTypeDefs = gql`
     success: Boolean!
     profileComplete: Boolean!
   }
-
-  """
-  Arbitrary JSON scalar for assessment answers
-  """
-  scalar JSON
 `;

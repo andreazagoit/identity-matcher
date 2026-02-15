@@ -1,7 +1,5 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "../../schema";
 import { insertUser } from "../../models/users/operations";
 import { insertClient } from "../../models/clients/operations";
 import { insertAssessment } from "../../models/assessments/operations";
@@ -14,7 +12,6 @@ import {
 } from "../../models/assessments/questions";
 
 const client = postgres(process.env.DATABASE_URL!, { prepare: false });
-const db = drizzle(client, { schema });
 
 /**
  * Seed script for Identity Matcher.
@@ -202,7 +199,7 @@ async function seed() {
   try {
     // ── 1. Create admin user (owner of default OAuth clients) ──
     console.log("👤 Creating admin user...");
-    const adminUser = await insertUser(db, {
+    const adminUser = await insertUser({
       ...ADMIN_USER,
       emailVerified: true,
     });
@@ -211,7 +208,7 @@ async function seed() {
     // ── 2. Create default OAuth clients ──
     console.log("\n🔑 Creating default OAuth clients...");
 
-    const svcResult = await insertClient(db, {
+    const svcResult = await insertClient({
       ...SERVICE_CLIENT,
       userId: adminUser.id,
     });
@@ -219,7 +216,7 @@ async function seed() {
     console.log(`    Client ID: ${SERVICE_CLIENT.clientId}`);
     console.log(`    API Key:   ${svcResult.apiKey}`);
 
-    const demoResult = await insertClient(db, {
+    const demoResult = await insertClient({
       ...DEMO_CLIENT,
       userId: adminUser.id,
     });
@@ -236,17 +233,17 @@ async function seed() {
       const userData = SEED_USERS[i];
 
       // Create user
-      const user = await insertUser(db, userData);
+      const user = await insertUser(userData);
 
       // Generate random assessment answers
       const answers = generateRandomAnswers();
 
       // Save assessment
-      await insertAssessment(db, { userId: user.id, answers });
+      await insertAssessment({ userId: user.id, answers });
 
       // Assemble profile text from answers & generate embeddings
       const profileData = assembleProfile(answers);
-      await upsertProfile(db, user.id, profileData, 1);
+      await upsertProfile(user.id, profileData, 1);
 
       console.log(
         `  ✓ ${i + 1}/${SEED_USERS.length} - ${userData.givenName} ${userData.familyName}`,

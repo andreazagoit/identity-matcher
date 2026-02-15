@@ -1,12 +1,11 @@
 /**
  * Profile operations: CRUD + Matching Engine.
- * Every function receives `db` so it can be called from
- * server-actions, GraphQL resolvers, **and** standalone scripts (seed).
  *
  * Key feature: client-scoped matching.
  * Clients only see users who gave consent for that specific client.
  */
 
+import { db } from "@/lib/db";
 import { eq, ne, sql, and, inArray } from "drizzle-orm";
 import { cosineDistance } from "drizzle-orm";
 import { user } from "@/lib/models/users/schema";
@@ -18,7 +17,6 @@ import {
 } from "./schema";
 import { generateAllUserEmbeddings } from "@/lib/embeddings";
 import type { ProfileData } from "@/lib/models/assessments/assembler";
-import type { Db } from "@/lib/db";
 
 // ============================================
 // TYPES
@@ -72,7 +70,6 @@ export interface FindMatchesOptions {
  * Generates vector embeddings from textual descriptions via OpenAI.
  */
 export async function upsertProfile(
-  db: Db,
   userId: string,
   data: ProfileData,
   assessmentVersion: number = 1,
@@ -124,10 +121,7 @@ export async function upsertProfile(
 /**
  * Retrieve a user profile by User ID.
  */
-export async function getProfileByUserId(
-  db: Db,
-  userId: string,
-): Promise<Profile | null> {
+export async function getProfileByUserId(userId: string): Promise<Profile | null> {
   const result = await db.query.profiles.findFirst({
     where: eq(profiles.userId, userId),
   });
@@ -137,11 +131,8 @@ export async function getProfileByUserId(
 /**
  * Check if a user has a complete profile with embeddings.
  */
-export async function hasCompleteProfile(
-  db: Db,
-  userId: string,
-): Promise<boolean> {
-  const profile = await getProfileByUserId(db, userId);
+export async function hasCompleteProfile(userId: string): Promise<boolean> {
+  const profile = await getProfileByUserId(userId);
   return !!profile?.psychologicalEmbedding;
 }
 
@@ -160,7 +151,6 @@ export async function hasCompleteProfile(
  * 3. Weighted ranking
  */
 export async function findMatches(
-  db: Db,
   options: FindMatchesOptions,
 ): Promise<ProfileMatch[]> {
   const {
@@ -175,7 +165,7 @@ export async function findMatches(
 
   const CANDIDATES = 200;
 
-  const currentProfile = await getProfileByUserId(db, userId);
+  const currentProfile = await getProfileByUserId(userId);
   if (!currentProfile?.psychologicalEmbedding) {
     throw new Error("Profile not found. Complete the assessment first.");
   }

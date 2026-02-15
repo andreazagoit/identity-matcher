@@ -1,15 +1,13 @@
 /**
- * Users – pure DB operations.
- * Every function receives `db` so it can be called from
- * server-actions (singleton db) **and** standalone scripts (seed).
+ * Users – DB operations.
  */
 
+import { db } from "@/lib/db";
 import { user } from "./schema";
-import { oauthConsent } from "@/lib/models/clients/schema";
+import { oauthClient, oauthConsent } from "@/lib/models/clients/schema";
 import { profiles } from "@/lib/models/profiles/schema";
 import { session } from "@/lib/models/auth/schema";
 import { eq, count, and, sql, countDistinct } from "drizzle-orm";
-import type { Db } from "@/lib/db";
 
 // ── CREATE ───────────────────────────────────────────────────────
 
@@ -23,7 +21,7 @@ export interface InsertUserOpts {
   emailVerified?: boolean;
 }
 
-export async function insertUser(db: Db, opts: InsertUserOpts) {
+export async function insertUser(opts: InsertUserOpts) {
   const [newUser] = await db
     .insert(user)
     .values({
@@ -38,7 +36,7 @@ export async function insertUser(db: Db, opts: InsertUserOpts) {
 
 // ── FIND ─────────────────────────────────────────────────────────
 
-export async function findUserById(db: Db, id: string) {
+export async function findUserById(id: string) {
   return db.query.user.findFirst({
     where: eq(user.id, id),
   });
@@ -54,28 +52,18 @@ export interface UpdateUserOpts {
   image?: string | null;
 }
 
-export async function updateUser(db: Db, userId: string, opts: UpdateUserOpts) {
+export async function updateUser(userId: string, opts: UpdateUserOpts) {
   const updateData: Record<string, unknown> = {};
 
-  if (opts.givenName !== undefined) {
-    updateData.givenName = opts.givenName;
-  }
-  if (opts.familyName !== undefined) {
-    updateData.familyName = opts.familyName;
-  }
-  if (opts.birthdate !== undefined) {
-    updateData.birthdate = opts.birthdate;
-  }
-  if (opts.gender !== undefined) {
-    updateData.gender = opts.gender;
-  }
-  if (opts.image !== undefined) {
-    updateData.image = opts.image;
-  }
+  if (opts.givenName !== undefined) updateData.givenName = opts.givenName;
+  if (opts.familyName !== undefined) updateData.familyName = opts.familyName;
+  if (opts.birthdate !== undefined) updateData.birthdate = opts.birthdate;
+  if (opts.gender !== undefined) updateData.gender = opts.gender;
+  if (opts.image !== undefined) updateData.image = opts.image;
 
   // Auto-update name if givenName or familyName changed
   if (opts.givenName !== undefined || opts.familyName !== undefined) {
-    const existing = await findUserById(db, userId);
+    const existing = await findUserById(userId);
     if (existing) {
       const newFirst = opts.givenName ?? existing.givenName;
       const newLast = opts.familyName ?? existing.familyName;
@@ -84,7 +72,7 @@ export async function updateUser(db: Db, userId: string, opts: UpdateUserOpts) {
   }
 
   if (Object.keys(updateData).length === 0) {
-    return findUserById(db, userId);
+    return findUserById(userId);
   }
 
   const [updated] = await db
@@ -97,7 +85,6 @@ export async function updateUser(db: Db, userId: string, opts: UpdateUserOpts) {
 }
 
 export async function updateUserLocation(
-  db: Db,
   userId: string,
   latitude: number,
   longitude: number,
@@ -118,7 +105,7 @@ export async function updateUserLocation(
 
 // ── READ (client-scoped) ─────────────────────────────────────────
 
-export async function findClientUsers(db: Db, clientId: string) {
+export async function findClientUsers(id: string) {
   const results = await db
     .select({
       user: {
@@ -132,10 +119,11 @@ export async function findClientUsers(db: Db, clientId: string) {
       },
       hasProfile: profiles.id,
     })
-    .from(oauthConsent)
+    .from(oauthClient)
+    .innerJoin(oauthConsent, eq(oauthClient.clientId, oauthConsent.clientId))
     .innerJoin(user, eq(oauthConsent.userId, user.id))
     .leftJoin(profiles, eq(user.id, profiles.userId))
-    .where(eq(oauthConsent.clientId, clientId))
+    .where(eq(oauthClient.id, id))
     .orderBy(oauthConsent.createdAt);
 
   return results.map((r) => ({
@@ -145,11 +133,12 @@ export async function findClientUsers(db: Db, clientId: string) {
   }));
 }
 
-export async function findClientStats(db: Db, clientId: string) {
+export async function findClientStats(id: string) {
   const [totalUsers] = await db
     .select({ value: count() })
-    .from(oauthConsent)
-    .where(eq(oauthConsent.clientId, clientId));
+    .from(oauthClient)
+    .innerJoin(oauthConsent, eq(oauthClient.clientId, oauthConsent.clientId))
+    .where(eq(oauthClient.id, id));
 
   // "Active" = session activity in the last 30 days
   const thirtyDaysAgo = new Date();
@@ -157,11 +146,12 @@ export async function findClientStats(db: Db, clientId: string) {
 
   const [activeUsers] = await db
     .select({ value: countDistinct(oauthConsent.userId) })
-    .from(oauthConsent)
+    .from(oauthClient)
+    .innerJoin(oauthConsent, eq(oauthClient.clientId, oauthConsent.clientId))
     .innerJoin(session, eq(oauthConsent.userId, session.userId))
     .where(
       and(
-        eq(oauthConsent.clientId, clientId),
+        eq(oauthClient.id, id),
         sql`${session.updatedAt} >= ${thirtyDaysAgo.toISOString()}::timestamp`,
       ),
     );
