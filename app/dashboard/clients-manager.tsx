@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createClient, deleteClient } from "@/lib/models/clients/actions";
+import { createClient } from "@/lib/models/clients/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Trash2, Copy, Plus, Loader2, ExternalLink, ShieldCheck } from "lucide-react";
+import { Plus, Copy, Loader2, ExternalLink, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { RedirectUriManager } from "./redirect-uri-manager";
 

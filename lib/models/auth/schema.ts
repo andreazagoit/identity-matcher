@@ -3,7 +3,6 @@ import {
   pgTable,
   text,
   timestamp,
-  boolean,
   index,
 } from "drizzle-orm/pg-core";
 import { user } from "@/lib/models/users/schema";
