@@ -469,28 +469,72 @@ export function LoginButton() {
             description="Una volta autenticato l'utente, puoi interrogare i match di compatibilità tramite l'API GraphQL."
           />
 
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-base font-semibold mb-3">Autenticazione</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Includi l&apos;access token nell&apos;header{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-                  Authorization
-                </code>{" "}
-                oppure usa una API key generata dalla dashboard.
+          <div className="mb-8 rounded-xl border border-primary/20 bg-primary/5 p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold mb-1">Prova subito</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Esplora lo schema, testa query e mutation direttamente dal
+                browser con Apollo Sandbox integrato.
               </p>
-              <CodeBlock language="bash" filename="cURL">
+            </div>
+            <Button asChild variant="outline" className="rounded-full shrink-0">
+              <Link href="/api/graphql" target="_blank" className="gap-2">
+                Apri GraphQL Sandbox
+                <ExternalLinkIcon className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="space-y-10">
+            {/* ── Metodo 1: OAuth ── */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="inline-flex items-center rounded-md bg-chart-3/15 px-2.5 py-1 text-xs font-bold text-chart-3">
+                  METODO 1
+                </span>
+                <h3 className="text-base font-semibold">OAuth — Access Token</h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Usa l&apos;access token ottenuto dal flusso OAuth2/OIDC. L&apos;utente è
+                identificato automaticamente dal token (campo{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  sub
+                </code>
+                ). Le query disponibili sono{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  me
+                </code>
+                ,{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  profileStatus
+                </code>
+                ,{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  findMatches
+                </code>
+                .
+              </p>
+              <CodeBlock language="bash" filename="cURL — con Bearer token">
                 {`curl -X POST ${process.env.NEXT_PUBLIC_APP_URL}/api/graphql \\
   -H "Authorization: Bearer <access_token>" \\
   -H "Content-Type: application/json" \\
-  -d '{"query": "{ findMatches(limit: 5) { user { name } score } }"}'`}
+  -d '{
+    "query": "{ me { id name email } findMatches(limit: 5) { user { name } score } }"
+  }'`}
               </CodeBlock>
-            </div>
-
-            <div>
-              <h3 className="text-base font-semibold mb-3">Query di esempio</h3>
-              <CodeBlock language="graphql" filename="findMatches.gql">
-                {`query FindMatches {
+              <div className="mt-4">
+                <CodeBlock language="graphql" filename="Esempio query OAuth">
+                  {`# L'utente viene identificato dal token — non serve passare userId
+query {
+  me {
+    id
+    name
+    email
+  }
+  profileStatus {
+    completed
+    completedAt
+  }
   findMatches(limit: 10) {
     user {
       id
@@ -504,7 +548,125 @@ export function LoginButton() {
     }
   }
 }`}
+                </CodeBlock>
+              </div>
+            </div>
+
+            {/* ── Metodo 2: API Key ── */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="inline-flex items-center rounded-md bg-chart-1/15 px-2.5 py-1 text-xs font-bold text-chart-1">
+                  METODO 2
+                </span>
+                <h3 className="text-base font-semibold">
+                  API Key — Server-to-Server
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Usa la API key generata dalla dashboard del client. A differenza
+                di OAuth, devi passare esplicitamente{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  userId
+                </code>{" "}
+                come argomento. Le query disponibili sono{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  userProfileStatus
+                </code>
+                ,{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  userMatches
+                </code>
+                .
+              </p>
+              <CodeBlock language="bash" filename="cURL — con API key">
+                {`# Puoi usare x-api-key header...
+curl -X POST ${process.env.NEXT_PUBLIC_APP_URL}/api/graphql \\
+  -H "x-api-key: <la-tua-api-key>" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "query": "{ userMatches(userId: \\"abc123\\", limit: 5) { user { name } score } }"
+  }'
+
+# ...oppure Bearer token con la API key
+curl -X POST ${process.env.NEXT_PUBLIC_APP_URL}/api/graphql \\
+  -H "Authorization: Bearer <la-tua-api-key>" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "query": "{ userMatches(userId: \\"abc123\\", limit: 5) { user { name } score } }"
+  }'`}
               </CodeBlock>
+              <div className="mt-4">
+                <CodeBlock language="graphql" filename="Esempio query API Key">
+                  {`# Con API key devi sempre specificare userId
+query {
+  userProfileStatus(userId: "abc123") {
+    completed
+    completedAt
+  }
+  userMatches(userId: "abc123", limit: 10) {
+    user {
+      id
+      name
+      givenName
+    }
+    score
+    breakdown {
+      axis
+      similarity
+    }
+  }
+}`}
+                </CodeBlock>
+              </div>
+            </div>
+
+            {/* ── Differenze ── */}
+            <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden">
+              <div className="px-5 py-3 border-b border-border/50 bg-muted/30">
+                <h3 className="text-sm font-semibold">
+                  OAuth vs API Key — Quando usare cosa
+                </h3>
+              </div>
+              <div className="grid sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-border/50">
+                <div className="p-5 space-y-2">
+                  <p className="text-sm font-medium text-chart-3">
+                    OAuth (Access Token)
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1.5">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2Icon className="h-4 w-4 text-chart-3 shrink-0 mt-0.5" />
+                      L&apos;utente è nel browser (frontend)
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2Icon className="h-4 w-4 text-chart-3 shrink-0 mt-0.5" />
+                      userId estratto automaticamente dal token
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2Icon className="h-4 w-4 text-chart-3 shrink-0 mt-0.5" />
+                      Scade — sicuro per ambienti client-side
+                    </li>
+                  </ul>
+                </div>
+                <div className="p-5 space-y-2">
+                  <p className="text-sm font-medium text-chart-1">
+                    API Key
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-1.5">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2Icon className="h-4 w-4 text-chart-1 shrink-0 mt-0.5" />
+                      Chiamate server-to-server (backend)
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2Icon className="h-4 w-4 text-chart-1 shrink-0 mt-0.5" />
+                      Devi passare userId esplicitamente
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2Icon className="h-4 w-4 text-chart-1 shrink-0 mt-0.5" />
+                      Non scade — usa solo lato server
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </Container>
