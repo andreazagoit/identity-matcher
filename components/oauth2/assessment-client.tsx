@@ -105,7 +105,7 @@ function AssessmentContent() {
     return (
       <div className="flex-1 flex items-center justify-center py-12">
         <Container>
-          <Card className="w-full max-w-md text-center border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
+          <Card className="mx-auto w-full max-w-md text-center border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
             <CardHeader className="pb-6">
               {completed ? (
                 <>
@@ -141,7 +141,7 @@ function AssessmentContent() {
     return (
       <div className="flex-1 flex items-center justify-center py-12">
       <Container>
-        <div className="w-full max-w-md space-y-6">
+        <div className="mx-auto w-full max-w-md space-y-6">
           {/* Header */}
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4 shadow-lg shadow-primary/20">
@@ -198,7 +198,7 @@ function AssessmentContent() {
   return (
     <div className="flex-1 flex items-center justify-center py-12">
     <Container>
-      <div className="w-full max-w-lg">
+      <div className="mx-auto w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4 shadow-lg shadow-primary/20">

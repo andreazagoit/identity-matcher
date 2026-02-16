@@ -2,72 +2,70 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
-  BookOpenIcon,
-  CodeIcon,
-  KeyIcon,
-  ShieldCheckIcon,
-  BrainCircuitIcon,
-  NetworkIcon,
   ArrowRightIcon,
+  BookOpenIcon,
+  CheckCircle2Icon,
   ExternalLinkIcon,
+  KeyIcon,
+  NetworkIcon,
+  ShieldCheckIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
 import { CodeBlock } from "@/components/code-block";
 import {
   FadeIn,
-  FadeUpStagger,
   FadeUpItem,
-  HoverCard,
+  FadeUpStagger,
   GradientBlob,
 } from "@/components/motion";
 import { Container } from "@/components/container";
 
 export const metadata: Metadata = {
-  title: "Documentazione — Identity Matcher",
+  title: "Documentazione - Identity Matcher",
   description:
-    "Guida completa all'integrazione di Identity Matcher: OAuth 2.1, PKCE, OpenID Connect, API GraphQL e AI Matching.",
+    "Guida completa per integrare Identity Matcher come provider OIDC in applicazioni Next.js con better-auth.",
 };
 
-// ---------------------------------------------------------------------------
-// Sections data
-// ---------------------------------------------------------------------------
+/* ────────────────────────────── quick-link data ────────────────────────────── */
 
 const quickLinks = [
   {
     icon: <ShieldCheckIcon className="h-5 w-5" />,
-    title: "Autenticazione OAuth 2.1",
-    description: "Flusso Authorization Code + PKCE, token exchange e gestione sessioni.",
-    href: "#oauth",
+    title: "Quick Start",
+    description:
+      "Configura Identity Matcher come provider OAuth2/OIDC in 4 step.",
+    href: "#quick-start",
   },
   {
     icon: <KeyIcon className="h-5 w-5" />,
-    title: "OpenID Connect",
-    description: "Discovery, id_token, UserInfo endpoint e configurazione OIDC.",
-    href: "#oidc",
+    title: "Endpoint e scopes",
+    description:
+      "Discovery OIDC, authorize, token, userinfo e scopes disponibili.",
+    href: "#endpoints",
   },
   {
     icon: <NetworkIcon className="h-5 w-5" />,
     title: "GraphQL API",
-    description: "Query per matching, profili utente e gestione client.",
+    description:
+      "Interroga i match di compatibilità con Bearer token o API key.",
     href: "#graphql",
   },
   {
-    icon: <BrainCircuitIcon className="h-5 w-5" />,
-    title: "AI Matching",
-    description: "Come funziona il questionario, gli embeddings e il calcolo di compatibilità.",
-    href: "#matching",
+    icon: <TriangleAlertIcon className="h-5 w-5" />,
+    title: "Troubleshooting",
+    description: "Errori comuni e soluzioni rapide.",
+    href: "#troubleshooting",
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
+/* ────────────────────────────────── page ────────────────────────────────── */
 
 export default function DocsPage() {
   return (
     <>
-      {/* Hero */}
-      <section className="relative isolate overflow-hidden py-24 sm:py-32">
-        <GradientBlob className="-top-20 right-1/4 h-[500px] w-[500px] bg-chart-2/15" />
+      {/* ── Hero ── */}
+      <section className="relative isolate overflow-hidden py-20 sm:py-28">
+        <GradientBlob className="-top-20 right-1/4 h-[480px] w-[480px] bg-chart-2/15" />
 
         <Container className="relative text-center">
           <FadeIn>
@@ -76,168 +74,423 @@ export default function DocsPage() {
               Documentazione
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-5">
-              Costruisci con{" "}
-              <span className="bg-gradient-to-r from-primary via-chart-2 to-chart-1 bg-clip-text text-transparent">
-                Identity Matcher
+              Integra Identity Matcher
+              <span className="block text-muted-foreground mt-1">
+                nella tua app Next.js
               </span>
             </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Tutto quello che serve per integrare autenticazione OAuth 2.1 e
-              AI matching nella tua applicazione.
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
+              Guida passo-passo per utilizzare Identity Matcher come provider
+              OIDC in un progetto Next.js con{" "}
+              <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono">
+                better-auth
+              </code>
+              . Discovery automatico, PKCE, consent e GraphQL API.
             </p>
+            <div className="mt-7 flex justify-center">
+              <Button asChild className="rounded-full">
+                <Link
+                  href="/.well-known/openid-configuration"
+                  target="_blank"
+                  className="gap-2"
+                >
+                  OIDC Discovery
+                  <ExternalLinkIcon className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </FadeIn>
         </Container>
       </section>
 
-      {/* Quick links */}
-      <Container className="pb-24">
-        <FadeUpStagger className="grid gap-5 sm:grid-cols-2">
+      {/* ── Quick links ── */}
+      <Container className="pb-16">
+        <FadeUpStagger className="grid gap-4 sm:grid-cols-2">
           {quickLinks.map((item) => (
-            <HoverCard key={item.title}>
-              <Link href={item.href} className="block">
-                <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-7 h-full transition-colors hover:border-primary/30">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative flex items-start gap-4">
-                    <div className="shrink-0 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      {item.icon}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
-                        {item.title}
-                        <ArrowRightIcon className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
+            <FadeUpItem key={item.title}>
+              <Link
+                href={item.href}
+                className="block rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-6 h-full hover:border-primary/30 transition-colors"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    {item.icon}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-base flex items-center gap-2">
+                      {item.title}
+                      <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                      {item.description}
+                    </p>
                   </div>
                 </div>
               </Link>
-            </HoverCard>
+            </FadeUpItem>
           ))}
         </FadeUpStagger>
       </Container>
 
-      {/* ── Quick Start ── */}
-      <section className="border-t border-border/50 bg-card/30 py-24 sm:py-28" id="quickstart">
+      {/* ── Prerequisiti ── */}
+      <section
+        className="border-t border-border/50 bg-card/30 py-20 sm:py-24"
+        id="prerequisites"
+      >
         <Container>
-          <FadeIn>
-            <div className="mb-12">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-3">
-                Quick Start
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                Inizia in 5 minuti
-              </h2>
-            </div>
-          </FadeIn>
+          <SectionTitle
+            kicker="Prerequisiti"
+            title="Prima di iniziare"
+            description="Cosa ti serve per integrare Identity Matcher nella tua applicazione."
+          />
 
-          <FadeUpStagger className="space-y-10">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <PrerequisiteCard
+              title="Account Identity Matcher"
+              description="Registrati su Identity Matcher e crea un client OAuth dalla dashboard."
+            />
+            <PrerequisiteCard
+              title="Progetto Next.js"
+              description="Un'app Next.js (App Router consigliato) con un database configurato."
+            />
+            <PrerequisiteCard
+              title="better-auth"
+              description={
+                <>
+                  Installa{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                    better-auth
+                  </code>{" "}
+                  nel tuo progetto con il plugin{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                    genericOAuth
+                  </code>
+                  .
+                </>
+              }
+            />
+          </div>
+        </Container>
+      </section>
+
+      {/* ── Quick Start ── */}
+      <section className="py-20 sm:py-24" id="quick-start">
+        <Container>
+          <SectionTitle
+            kicker="Quick Start"
+            title="Integrazione in 4 step"
+            description="Configura Identity Matcher come provider OIDC nella tua app Next.js con better-auth."
+          />
+
+          <div className="space-y-10">
             {/* Step 1 */}
-            <FadeUpItem>
-              <div className="flex gap-4">
-                <div className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                  1
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-3">Crea un Client OAuth</h3>
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                    Dalla <Link href="/dashboard" className="text-primary hover:underline">Dashboard</Link>,
-                    crea un nuovo client. Otterrai <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">client_id</code>{" "}
-                    e <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">client_secret</code>.
-                  </p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Aggiungi i redirect URI della tua app (es.{" "}
-                    <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
-                      https://tuaapp.com/api/auth/callback/identitymatcher
-                    </code>
-                    ).
-                  </p>
-                </div>
-              </div>
-            </FadeUpItem>
+            <Step number="1" title="Installa le dipendenze">
+              <CodeBlock language="bash" filename="Terminal">
+                {`npm install better-auth`}
+              </CodeBlock>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Assicurati di avere anche un database supportato (PostgreSQL,
+                MySQL, SQLite) e il relativo driver configurato.
+              </p>
+            </Step>
 
             {/* Step 2 */}
-            <FadeUpItem>
-              <div className="flex gap-4">
-                <div className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                  2
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-3">Configura OIDC Discovery</h3>
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                    Punta il tuo framework al discovery URL:
-                  </p>
-                  <CodeBlock language="bash" filename="discovery">
-{`# Discovery endpoint
-GET /.well-known/openid-configuration
+            <Step number="2" title="Configura le variabili ambiente">
+              <CodeBlock language="bash" filename=".env.local">
+                {`# URL del server Identity Matcher
+IDENTITY_MATCHER_URL=${process.env.NEXT_PUBLIC_APP_URL}
 
-# Risponde con authorization_endpoint, token_endpoint,
-# jwks_uri, userinfo_endpoint, etc.`}
-                  </CodeBlock>
-                  <div className="mt-3">
-                    <Button variant="outline" size="sm" asChild className="gap-1.5 rounded-full">
-                      <Link
-                        href="/.well-known/openid-configuration"
-                        target="_blank"
-                      >
-                        Vedi OIDC Discovery live
-                        <ExternalLinkIcon className="h-3 w-3" />
-                      </Link>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </FadeUpItem>
+# Credenziali OAuth (dalla dashboard Identity Matcher)
+IDENTITY_MATCHER_CLIENT_ID=il-tuo-client-id
+IDENTITY_MATCHER_CLIENT_SECRET=il-tuo-client-secret`}
+              </CodeBlock>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Puoi trovare{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  CLIENT_ID
+                </code>{" "}
+                e{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  CLIENT_SECRET
+                </code>{" "}
+                nella sezione <strong>Integrazione</strong> del tuo client nella
+                dashboard.
+              </p>
+            </Step>
 
             {/* Step 3 */}
-            <FadeUpItem>
-              <div className="flex gap-4">
-                <div className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                  3
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-3">Implementa il flusso auth</h3>
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                    Esempio con <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">better-auth</code> (Next.js):
-                  </p>
-                  <CodeBlock language="typescript" filename="lib/auth.ts">
-{`// lib/auth.ts
-import { betterAuth } from "better-auth";
+            <Step number="3" title="Configura better-auth (server + client)">
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Crea il file di configurazione server-side. Il plugin{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  genericOAuth
+                </code>{" "}
+                legge automaticamente tutti gli endpoint dal discovery OIDC.
+              </p>
+
+              <CodeBlock language="typescript" filename="lib/auth.ts">
+                {`import { betterAuth } from "better-auth";
 import { genericOAuth } from "better-auth/plugins";
+import { nextCookies } from "better-auth/next-js";
+
+const identityMatcherUrl = process.env.IDENTITY_MATCHER_URL!;
 
 export const auth = betterAuth({
+  baseURL: process.env.NEXT_PUBLIC_APP_URL!,
+  basePath: "/api/auth",
+
+  // ... database, emailAndPassword, ecc.
+
   plugins: [
     genericOAuth({
-      config: [{
-        providerId: "identitymatcher",
-        discoveryUrl: \`\${PROVIDER}/.well-known/openid-configuration\`,
-        clientId: process.env.OAUTH_CLIENT_ID!,
-        clientSecret: process.env.OAUTH_CLIENT_SECRET!,
-        pkce: true,
-        scopes: ["openid", "profile", "email"],
-      }],
+      config: [
+        {
+          providerId: "identitymatcher",
+          discoveryUrl: \`\${identityMatcherUrl}/.well-known/openid-configuration\`,
+          clientId: process.env.IDENTITY_MATCHER_CLIENT_ID!,
+          clientSecret: process.env.IDENTITY_MATCHER_CLIENT_SECRET!,
+          pkce: true,
+          prompt: "consent",
+          scopes: ["openid", "profile", "email"],
+        },
+      ],
     }),
+    nextCookies(),
   ],
+
+  // Consigliato: abilita il linking automatico degli account
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["identitymatcher"],
+    },
+  },
 });`}
-                  </CodeBlock>
-                </div>
+              </CodeBlock>
+
+              <div className="mt-4">
+                <CodeBlock language="typescript" filename="lib/auth-client.ts">
+                  {`import { createAuthClient } from "better-auth/react";
+import { genericOAuthClient } from "better-auth/client/plugins";
+
+export const authClient = createAuthClient({
+  baseURL: process.env.NEXT_PUBLIC_APP_URL!,
+  plugins: [genericOAuthClient()],
+});
+
+export const { signIn, signOut, useSession } = authClient;`}
+                </CodeBlock>
               </div>
-            </FadeUpItem>
+
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                  Esponi le API route di better-auth nel tuo progetto:
+                </p>
+                <CodeBlock language="typescript" filename="app/api/auth/[...all]/route.ts">
+                  {`import { auth } from "@/lib/auth";
+import { toNextJsHandler } from "better-auth/next-js";
+
+export const { GET, POST } = toNextJsHandler(auth);`}
+                </CodeBlock>
+              </div>
+            </Step>
 
             {/* Step 4 */}
-            <FadeUpItem>
-              <div className="flex gap-4">
-                <div className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-                  4
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-3">Usa l&apos;API GraphQL per i match</h3>
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                    Una volta autenticati, puoi chiamare l&apos;API GraphQL per trovare utenti compatibili:
-                  </p>
-                  <CodeBlock language="graphql" filename="findMatches.gql">
-{`query FindMatches {
+            <Step number="4" title="Avvia il login">
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Chiama{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  signIn.oauth2()
+                </code>{" "}
+                per avviare il flusso OAuth2 con Identity Matcher. L&apos;utente
+                verrà reindirizzato alla pagina di login/consenso e poi
+                riportato alla tua app.
+              </p>
+
+              <CodeBlock language="tsx" filename="components/login-button.tsx">
+                {`"use client";
+
+import { signIn } from "@/lib/auth-client";
+
+export function LoginButton() {
+  return (
+    <button
+      onClick={() =>
+        signIn.oauth2({
+          providerId: "identitymatcher",
+          callbackURL: "/dashboard", // dove tornare dopo il login
+        })
+      }
+    >
+      Accedi con Identity Matcher
+    </button>
+  );
+}`}
+              </CodeBlock>
+            </Step>
+          </div>
+        </Container>
+      </section>
+
+      {/* ── Flusso OAuth2 ── */}
+      <section
+        className="border-t border-border/50 bg-card/30 py-20 sm:py-24"
+        id="flow"
+      >
+        <Container>
+          <SectionTitle
+            kicker="Come funziona"
+            title="Il flusso OAuth2 / OIDC"
+            description="Cosa succede quando un utente clicca il pulsante di login."
+          />
+
+          <div className="space-y-3">
+            <FlowStep
+              number="1"
+              title="Redirect ad authorize"
+              description="better-auth costruisce l'URL di authorization con PKCE, scopes e state, e reindirizza l'utente a Identity Matcher."
+            />
+            <FlowStep
+              number="2"
+              title="Login e consenso"
+              description="L'utente si autentica su Identity Matcher (o crea un account) e approva i permessi richiesti."
+            />
+            <FlowStep
+              number="3"
+              title="Callback con authorization code"
+              description="Identity Matcher reindirizza l'utente alla tua app con un codice temporaneo nell'URL."
+            />
+            <FlowStep
+              number="4"
+              title="Scambio code → token"
+              description="better-auth scambia il codice con access token e ID token tramite il token endpoint."
+            />
+            <FlowStep
+              number="5"
+              title="Sessione creata"
+              description="L'utente è autenticato nella tua app. I dati del profilo OIDC vengono salvati nel database."
+            />
+          </div>
+        </Container>
+      </section>
+
+      {/* ── Endpoint ── */}
+      <section className="py-20 sm:py-24" id="endpoints">
+        <Container>
+          <SectionTitle
+            kicker="Reference"
+            title="Endpoint"
+            description="Tutti gli endpoint sono esposti dal server Identity Matcher. Il discovery OIDC li fornisce automaticamente a better-auth."
+          />
+
+          <div className="space-y-4">
+            <EndpointRow
+              method="GET"
+              path="/.well-known/openid-configuration"
+              description="Discovery OIDC — contiene tutti gli URL necessari per il flusso OAuth2."
+            />
+            <EndpointRow
+              method="GET"
+              path="/api/auth/oauth2/authorize"
+              description="Authorization endpoint — avvia il flusso di login."
+            />
+            <EndpointRow
+              method="POST"
+              path="/api/auth/token"
+              description="Token endpoint — scambia authorization code con access/ID token."
+            />
+            <EndpointRow
+              method="GET"
+              path="/api/auth/userinfo"
+              description="Userinfo — restituisce i dati utente in base agli scopes concessi."
+            />
+            <EndpointRow
+              method="GET"
+              path="/api/auth/jwks"
+              description="JSON Web Key Set — chiavi pubbliche per validare i JWT."
+            />
+          </div>
+
+          <div className="mt-12">
+            <h3 className="text-lg font-semibold mb-4">Scopes disponibili</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ScopeCard
+                scope="openid"
+                description="Obbligatorio. Abilita il flusso OIDC e restituisce un ID token con il subject dell'utente."
+              />
+              <ScopeCard
+                scope="profile"
+                description="Nome, cognome, data di nascita e genere dell'utente."
+              />
+              <ScopeCard
+                scope="email"
+                description="Indirizzo email dell'utente e stato di verifica."
+              />
+              <ScopeCard
+                scope="location"
+                description="Coordinate geografiche dell'utente (se condivise)."
+              />
+              <ScopeCard
+                scope="offline_access"
+                description="Rilascia un refresh token per mantenere la sessione attiva."
+              />
+            </div>
+          </div>
+
+          <div className="mt-10 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5">
+            <h4 className="text-sm font-semibold mb-2">
+              Esempio risposta userinfo
+            </h4>
+            <CodeBlock language="json" filename="GET /api/auth/userinfo">
+              {`{
+  "sub": "abc123",
+  "name": "Mario Rossi",
+  "given_name": "Mario",
+  "family_name": "Rossi",
+  "email": "mario@example.com",
+  "email_verified": true,
+  "birthdate": "1990-05-15",
+  "gender": "male"
+}`}
+            </CodeBlock>
+          </div>
+        </Container>
+      </section>
+
+      {/* ── GraphQL ── */}
+      <section
+        className="border-t border-border/50 bg-card/30 py-20 sm:py-24"
+        id="graphql"
+      >
+        <Container>
+          <SectionTitle
+            kicker="GraphQL"
+            title="Matching API"
+            description="Una volta autenticato l'utente, puoi interrogare i match di compatibilità tramite l'API GraphQL."
+          />
+
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-base font-semibold mb-3">Autenticazione</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Includi l&apos;access token nell&apos;header{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  Authorization
+                </code>{" "}
+                oppure usa una API key generata dalla dashboard.
+              </p>
+              <CodeBlock language="bash" filename="cURL">
+                {`curl -X POST ${process.env.NEXT_PUBLIC_APP_URL}/api/graphql \\
+  -H "Authorization: Bearer <access_token>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"query": "{ findMatches(limit: 5) { user { name } score } }"}'`}
+              </CodeBlock>
+            </div>
+
+            <div>
+              <h3 className="text-base font-semibold mb-3">Query di esempio</h3>
+              <CodeBlock language="graphql" filename="findMatches.gql">
+                {`query FindMatches {
   findMatches(limit: 10) {
     user {
       id
@@ -251,188 +504,182 @@ export const auth = betterAuth({
     }
   }
 }`}
-                  </CodeBlock>
-                </div>
-              </div>
-            </FadeUpItem>
-          </FadeUpStagger>
-        </Container>
-      </section>
-
-      {/* ── OAuth 2.1 Reference ── */}
-      <section className="py-24 sm:py-28" id="oauth">
-        <Container>
-          <FadeIn>
-            <div className="mb-12">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-3">
-                Riferimento
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                Endpoint OAuth 2.1
-              </h2>
-            </div>
-          </FadeIn>
-
-          <FadeUpStagger className="space-y-4">
-            <EndpointRow
-              method="GET"
-              path="/api/auth/oauth2/authorize"
-              description="Inizio flusso autorizzazione (Authorization Code + PKCE)"
-            />
-            <EndpointRow
-              method="POST"
-              path="/api/auth/token"
-              description="Scambia authorization code per access/refresh token"
-            />
-            <EndpointRow
-              method="GET"
-              path="/api/auth/userinfo"
-              description="Informazioni utente (richiede Bearer token)"
-            />
-            <EndpointRow
-              method="GET"
-              path="/api/auth/jwks"
-              description="JSON Web Key Set per la verifica dei token"
-            />
-            <EndpointRow
-              method="GET"
-              path="/.well-known/openid-configuration"
-              description="OIDC Discovery / server metadata"
-            />
-          </FadeUpStagger>
-        </Container>
-      </section>
-
-      {/* ── Scopes ── */}
-      <section className="border-t border-border/50 bg-card/30 py-24 sm:py-28" id="oidc">
-        <Container>
-          <FadeIn>
-            <div className="mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                Scopes disponibili
-              </h2>
-            </div>
-          </FadeIn>
-
-          <FadeUpStagger className="grid gap-4 sm:grid-cols-2">
-            <ScopeCard scope="openid" description="Identità base OpenID Connect. Restituisce sub (user id)." />
-            <ScopeCard scope="profile" description="Nome, cognome, data di nascita e genere." />
-            <ScopeCard scope="email" description="Indirizzo email dell'utente." />
-            <ScopeCard scope="offline_access" description="Ottieni refresh token per accesso persistente." />
-            <ScopeCard scope="location" description="Coordinate geografiche (se condivise dall'utente)." />
-          </FadeUpStagger>
-        </Container>
-      </section>
-
-      {/* ── AI Matching ── */}
-      <section className="py-24 sm:py-28" id="matching">
-        <Container>
-          <FadeIn>
-            <div className="mb-12">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-3">
-                AI
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                Come funziona il Matching
-              </h2>
-            </div>
-          </FadeIn>
-
-          <FadeUpStagger className="space-y-8">
-            <FadeUpItem>
-              <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-7">
-                <h3 className="font-semibold text-lg mb-3">1. Questionario psicometrico</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Al primo accesso, l&apos;utente completa un questionario con domande su
-                  personalità, interessi, valori e stile comunicativo. Le risposte sono
-                  testo libero analizzato dall&apos;AI.
-                </p>
-              </div>
-            </FadeUpItem>
-
-            <FadeUpItem>
-              <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-7">
-                <h3 className="font-semibold text-lg mb-3">2. Embedding vettoriale</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  L&apos;AI genera un embedding vettoriale su 4 assi:
-                  <strong> personalità</strong>, <strong>interessi</strong>,{" "}
-                  <strong>valori</strong> e <strong>stile comunicativo</strong>.
-                  Ogni asse produce un vettore n-dimensionale normalizzato.
-                </p>
-              </div>
-            </FadeUpItem>
-
-            <FadeUpItem>
-              <div className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-7">
-                <h3 className="font-semibold text-lg mb-3">3. Calcolo compatibilità</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  La compatibilità tra due utenti è calcolata come media pesata della
-                  similarità coseno su ciascun asse. Il risultato è uno score 0-100 con
-                  breakdown per asse, che puoi personalizzare con pesi diversi nella
-                  query GraphQL.
-                </p>
-              </div>
-            </FadeUpItem>
-          </FadeUpStagger>
-        </Container>
-      </section>
-
-      {/* ── GraphQL ── */}
-      <section className="border-t border-border/50 bg-card/30 py-24 sm:py-28" id="graphql">
-        <Container>
-          <FadeIn>
-            <div className="mb-12">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-3">
-                API
-              </p>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                GraphQL API
-              </h2>
-              <p className="text-muted-foreground mt-3 max-w-2xl">
-                L&apos;API GraphQL è accessibile all&apos;endpoint{" "}
-                <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">/api/graphql</code>.
-                Autentica le richieste con un Bearer token o API Key.
-              </p>
-            </div>
-          </FadeIn>
-
-          <FadeUpStagger className="space-y-6">
-            <FadeUpItem>
-              <h3 className="font-semibold text-lg mb-3">Query di esempio</h3>
-              <CodeBlock language="graphql" filename="queries.gql">
-{`# Profilo utente corrente
-query Me {
-  me {
-    id
-    name
-    email
-    profile {
-      completedAt
-      axes { name embedding }
-    }
-  }
-}
-
-# Trova match compatibili
-query FindMatches {
-  findMatches(limit: 20, minScore: 60) {
-    user { id name givenName }
-    score
-    breakdown { axis similarity }
-  }
-}`}
               </CodeBlock>
-            </FadeUpItem>
-          </FadeUpStagger>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      {/* ── Troubleshooting ── */}
+      <section className="py-20 sm:py-24" id="troubleshooting">
+        <Container>
+          <SectionTitle
+            kicker="Troubleshooting"
+            title="Errori comuni"
+            description="I problemi più frequenti durante l'integrazione e come risolverli."
+          />
+
+          <div className="space-y-4">
+            <TroubleshootItem
+              title="account_not_linked"
+              description="L'utente esiste già nel tuo database con un metodo di accesso diverso (es. email/password) e better-auth non sa come collegare il nuovo provider."
+              fix={
+                <>
+                  Abilita{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                    account.accountLinking.enabled
+                  </code>{" "}
+                  e aggiungi{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                    {'"identitymatcher"'}
+                  </code>{" "}
+                  a{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                    trustedProviders
+                  </code>{" "}
+                  nella configurazione di better-auth.
+                </>
+              }
+            />
+            <TroubleshootItem
+              title="Redirect alla pagina sbagliata dopo login"
+              description={
+                <>
+                  Dopo il login l&apos;utente torna alla homepage invece che
+                  alla pagina desiderata.
+                </>
+              }
+              fix={
+                <>
+                  Passa{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                    callbackURL
+                  </code>{" "}
+                  in{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                    signIn.oauth2()
+                  </code>{" "}
+                  e assicurati che il redirect URI sia registrato nel client
+                  OAuth dalla dashboard Identity Matcher.
+                </>
+              }
+            />
+            <TroubleshootItem
+              title="Discovery endpoint non trovato"
+              description="better-auth non riesce a leggere la configurazione OIDC dal server."
+              fix={
+                <>
+                  L&apos;endpoint corretto è{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                    /.well-known/openid-configuration
+                  </code>
+                  . Non usare{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                    /.well-known/oauth-authorization-server
+                  </code>{" "}
+                  che è un endpoint diverso.
+                </>
+              }
+            />
+            <TroubleshootItem
+              title="PKCE code_verifier mancante"
+              description="Il token endpoint rifiuta la richiesta perché manca il code_verifier."
+              fix={
+                <>
+                  Assicurati di avere{" "}
+                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                    pkce: true
+                  </code>{" "}
+                  nella configurazione del provider genericOAuth. better-auth
+                  gestirà automaticamente la generazione e lo scambio del
+                  code_verifier.
+                </>
+              }
+            />
+          </div>
         </Container>
       </section>
     </>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
+/* ──────────────────────── Componenti locali ──────────────────────── */
+
+function SectionTitle({
+  kicker,
+  title,
+  description,
+}: {
+  kicker: string;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <FadeIn>
+      <div className="mb-10">
+        <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-2">
+          {kicker}
+        </p>
+        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
+          {title}
+        </h2>
+        {description && (
+          <p className="mt-2 text-sm sm:text-base text-muted-foreground max-w-3xl leading-relaxed">
+            {description}
+          </p>
+        )}
+      </div>
+    </FadeIn>
+  );
+}
+
+function Step({
+  number,
+  title,
+  children,
+}: {
+  number: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <FadeUpItem>
+      <div className="flex gap-4">
+        <div className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
+          {number}
+        </div>
+        <div className="flex-1 space-y-4">
+          <h3 className="font-semibold text-lg">{title}</h3>
+          {children}
+        </div>
+      </div>
+    </FadeUpItem>
+  );
+}
+
+function FlowStep({
+  number,
+  title,
+  description,
+}: {
+  number: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="flex gap-4 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5">
+      <div className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
+        {number}
+      </div>
+      <div>
+        <h4 className="font-semibold text-sm">{title}</h4>
+        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 function EndpointRow({
   method,
@@ -449,19 +696,17 @@ function EndpointRow({
       : "bg-chart-1/15 text-chart-1";
 
   return (
-    <FadeUpItem>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5">
-        <div className="flex items-center gap-3 shrink-0">
-          <span
-            className={`inline-flex items-center rounded-md px-2 py-1 text-[11px] font-bold font-mono uppercase ${methodColor}`}
-          >
-            {method}
-          </span>
-          <code className="text-sm font-mono text-foreground">{path}</code>
-        </div>
-        <p className="text-sm text-muted-foreground sm:ml-auto">{description}</p>
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5">
+      <div className="flex items-center gap-3 shrink-0">
+        <span
+          className={`inline-flex items-center rounded-md px-2 py-1 text-[11px] font-bold font-mono uppercase ${methodColor}`}
+        >
+          {method}
+        </span>
+        <code className="text-sm font-mono text-foreground">{path}</code>
       </div>
-    </FadeUpItem>
+      <p className="text-sm text-muted-foreground sm:ml-auto">{description}</p>
+    </div>
   );
 }
 
@@ -473,15 +718,62 @@ function ScopeCard({
   description: string;
 }) {
   return (
-    <FadeUpItem>
-      <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5">
-        <code className="rounded bg-primary/10 px-2 py-1 text-xs font-mono font-semibold text-primary">
-          {scope}
+    <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5">
+      <code className="rounded bg-primary/10 px-2 py-1 text-xs font-mono font-semibold text-primary">
+        {scope}
+      </code>
+      <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function PrerequisiteCard({
+  title,
+  description,
+}: {
+  title: string;
+  description: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5">
+      <div className="flex items-center gap-2 mb-2">
+        <CheckCircle2Icon className="h-4 w-4 text-primary" />
+        <h3 className="font-semibold text-sm">{title}</h3>
+      </div>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function TroubleshootItem({
+  title,
+  description,
+  fix,
+}: {
+  title: string;
+  description: React.ReactNode;
+  fix: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-border/50 bg-card/60 backdrop-blur-sm p-5">
+      <h3 className="font-semibold text-base mb-2">
+        <code className="rounded bg-destructive/10 px-2 py-1 text-sm font-mono text-destructive">
+          {title}
         </code>
-        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-          {description}
+      </h3>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {description}
+      </p>
+      <div className="mt-3 rounded-lg bg-primary/5 border border-primary/10 p-3">
+        <p className="text-sm leading-relaxed">
+          <span className="text-primary font-medium">Soluzione:</span>{" "}
+          <span className="text-muted-foreground">{fix}</span>
         </p>
       </div>
-    </FadeUpItem>
+    </div>
   );
 }

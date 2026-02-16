@@ -5,6 +5,17 @@ import Link from "next/link";
 import { authClient } from "@/lib/client";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -131,11 +142,6 @@ export default function AccountForm({
 
   // ── Delete Account ──
   const handleDeleteAccount = async () => {
-    const confirmed = confirm(
-      "Confermi l'eliminazione definitiva dell'account? Questa azione non è reversibile."
-    );
-    if (!confirmed) return;
-
     setDeleteLoading(true);
     setDeleteError(null);
 
@@ -512,19 +518,43 @@ export default function AccountForm({
               Rimuove definitivamente il tuo account e tutti i dati associati.
             </p>
           </div>
-          <Button
-            variant="destructive"
-            onClick={handleDeleteAccount}
-            disabled={deleteLoading}
-            className="rounded-full"
-          >
-            {deleteLoading ? (
-              <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Trash2Icon className="h-4 w-4 mr-2" />
-            )}
-            Elimina account
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                disabled={deleteLoading}
+                className="rounded-full"
+              >
+                {deleteLoading ? (
+                  <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Trash2Icon className="h-4 w-4 mr-2" />
+                )}
+                Elimina account
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Conferma eliminazione account</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Questa azione elimina definitivamente il tuo account e tutti i
+                  dati associati. Non puo essere annullata.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleteLoading}>
+                  Annulla
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  disabled={deleteLoading}
+                  onClick={handleDeleteAccount}
+                >
+                  {deleteLoading ? "Eliminazione..." : "Elimina account"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
         {deleteError && (
           <div className="mt-3 bg-destructive/10 border border-destructive/30 text-destructive px-4 py-2.5 rounded-xl text-sm">

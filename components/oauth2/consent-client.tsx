@@ -129,7 +129,7 @@ function ConsentContent() {
     return (
       <div className="flex-1 flex items-center justify-center py-12">
         <Container>
-          <Card className="max-w-md w-full border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
+          <Card className="mx-auto max-w-md w-full border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
             <CardHeader className="text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 mx-auto mb-2">
                 <XCircleIcon className="w-7 h-7 text-destructive" />
@@ -148,7 +148,7 @@ function ConsentContent() {
   return (
     <div className="flex-1 flex items-center justify-center py-12">
     <Container>
-      <div className="w-full max-w-md">
+      <div className="mx-auto w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4 shadow-lg shadow-primary/20">
