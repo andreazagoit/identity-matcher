@@ -119,7 +119,7 @@ function ConsentContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex-1 flex items-center justify-center bg-background">
         <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -127,34 +127,41 @@ function ConsentContent() {
 
   if (error && !clientInfo) {
     return (
-      <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
-        <Card className="max-w-md w-full">
-          <CardHeader className="text-center">
-            <XCircleIcon className="w-12 h-12 text-destructive mx-auto mb-2" />
-            <CardTitle className="text-destructive">Errore</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground text-center">{error}</p>
-          </CardContent>
-        </Card>
-      </Container>
+      <div className="flex-1 flex items-center justify-center py-12">
+        <Container>
+          <Card className="max-w-md w-full border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
+            <CardHeader className="text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 mx-auto mb-2">
+                <XCircleIcon className="w-7 h-7 text-destructive" />
+              </div>
+              <CardTitle className="text-destructive">Errore</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground text-center text-sm">{error}</p>
+            </CardContent>
+          </Card>
+        </Container>
+      </div>
     );
   }
 
   return (
-    <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
+    <div className="flex-1 flex items-center justify-center py-12">
+    <Container>
       <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4 shadow-lg shadow-primary/20">
             <span className="text-xl font-bold text-primary-foreground">ID</span>
           </div>
         </div>
 
-        <Card>
+        <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-2">
-              <ShieldCheckIcon className="w-12 h-12 text-primary" />
+            <div className="mx-auto mb-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 mx-auto">
+                <ShieldCheckIcon className="w-6 h-6 text-primary" />
+              </div>
             </div>
             <CardTitle>Autorizza l&apos;accesso</CardTitle>
             <CardDescription>
@@ -175,13 +182,15 @@ function ConsentContent() {
               <p className="text-sm font-medium text-foreground mb-3">
                 Questa applicazione avrà accesso a:
               </p>
-              <ul className="space-y-2.5">
+              <ul className="space-y-3">
                 {scopes.map((s) => (
                   <li
                     key={s}
                     className="flex items-center text-muted-foreground text-sm"
                   >
-                    <CheckCircle2Icon className="w-4 h-4 text-primary mr-2.5 flex-shrink-0" />
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 mr-3">
+                      <CheckCircle2Icon className="w-3.5 h-3.5 text-primary" />
+                    </div>
                     {SCOPE_LABELS[s] || s}
                   </li>
                 ))}
@@ -194,14 +203,14 @@ function ConsentContent() {
                 onClick={() => handleConsent(false)}
                 variant="outline"
                 disabled={submitting}
-                className="flex-1"
+                className="flex-1 rounded-full h-11"
               >
                 Rifiuta
               </Button>
               <Button
                 onClick={() => handleConsent(true)}
                 disabled={submitting}
-                className="flex-1"
+                className="flex-1 rounded-full h-11"
               >
                 {submitting && (
                   <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
@@ -212,11 +221,12 @@ function ConsentContent() {
           </CardContent>
         </Card>
 
-        <p className="text-xs text-muted-foreground text-center mt-4">
+        <p className="text-xs text-muted-foreground text-center mt-5">
           Potrai revocare l&apos;accesso in qualsiasi momento dalle impostazioni del tuo account.
         </p>
       </div>
     </Container>
+    </div>
   );
 }
 

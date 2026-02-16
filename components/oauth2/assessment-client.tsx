@@ -39,7 +39,7 @@ function AssessmentContent() {
 
   if (sessionLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex-1 flex items-center justify-center bg-background">
         <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -103,41 +103,48 @@ function AssessmentContent() {
 
   if (loading || completed) {
     return (
-      <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            {completed ? (
-              <>
-                <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                <CardTitle>Profilo completato!</CardTitle>
-                <CardDescription>
-                  Stiamo preparando il tuo profilo con AI...
-                </CardDescription>
-              </>
-            ) : (
-              <>
-                <Loader2Icon className="h-12 w-12 animate-spin text-primary mx-auto mb-2" />
-                <CardTitle>Analisi in corso...</CardTitle>
-                <CardDescription>
-                  Stiamo generando il tuo profilo di compatibilità con AI.
-                  Questo potrebbe richiedere qualche secondo.
-                </CardDescription>
-              </>
-            )}
-          </CardHeader>
-        </Card>
-      </Container>
+      <div className="flex-1 flex items-center justify-center py-12">
+        <Container>
+          <Card className="w-full max-w-md text-center border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
+            <CardHeader className="pb-6">
+              {completed ? (
+                <>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-500/10 mx-auto mb-3">
+                    <CheckCircle2 className="h-7 w-7 text-green-500" />
+                  </div>
+                  <CardTitle>Profilo completato!</CardTitle>
+                  <CardDescription>
+                    Stiamo preparando il tuo profilo con AI...
+                  </CardDescription>
+                </>
+              ) : (
+                <>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mx-auto mb-3">
+                    <Loader2Icon className="h-7 w-7 animate-spin text-primary" />
+                  </div>
+                  <CardTitle>Analisi in corso...</CardTitle>
+                  <CardDescription>
+                    Stiamo generando il tuo profilo di compatibilità con AI.
+                    Questo potrebbe richiedere qualche secondo.
+                  </CardDescription>
+                </>
+              )}
+            </CardHeader>
+          </Card>
+        </Container>
+      </div>
     );
   }
 
   // ── Choice screen: compile now or skip ──
   if (!showQuestionnaire) {
     return (
-      <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center py-12">
+      <Container>
         <div className="w-full max-w-md space-y-6">
           {/* Header */}
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4 shadow-lg shadow-primary/20">
               <span className="text-xl font-bold text-primary-foreground">
                 ID
               </span>
@@ -145,12 +152,12 @@ function AssessmentContent() {
             <h1 className="text-xl font-semibold text-foreground">
               Benvenuto, {session.user.name}!
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1.5">
               Il tuo account è stato creato con successo.
             </p>
           </div>
 
-          <Card>
+          <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
             <CardHeader>
               <CardTitle className="text-lg">Questionario di compatibilità</CardTitle>
               <CardDescription>
@@ -160,7 +167,7 @@ function AssessmentContent() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
-                className="w-full"
+                className="w-full rounded-full h-11"
                 size="lg"
                 onClick={() => setShowQuestionnaire(true)}
               >
@@ -169,7 +176,7 @@ function AssessmentContent() {
               </Button>
               <Button
                 variant="ghost"
-                className="w-full text-muted-foreground"
+                className="w-full text-muted-foreground rounded-full"
                 size="lg"
                 onClick={handleSkip}
               >
@@ -183,16 +190,18 @@ function AssessmentContent() {
           </Card>
         </div>
       </Container>
+      </div>
     );
   }
 
   // ── Questionnaire screen ──
   return (
-    <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
+    <div className="flex-1 flex items-center justify-center py-12">
+    <Container>
       <div className="w-full max-w-lg">
         {/* Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4 shadow-lg shadow-primary/20">
             <span className="text-xl font-bold text-primary-foreground">
               ID
             </span>
@@ -200,14 +209,14 @@ function AssessmentContent() {
           <h1 className="text-xl font-semibold text-foreground">
             Completa il tuo profilo
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1.5">
             Ciao {session.user.name}! Rispondi a qualche domanda per aiutarci
             a trovare persone compatibili con te.
           </p>
         </div>
 
         {error && (
-          <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-xl mb-4 text-sm">
+          <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-xl mb-5 text-sm">
             {error}
           </div>
         )}
@@ -218,6 +227,7 @@ function AssessmentContent() {
         />
       </div>
     </Container>
+    </div>
   );
 }
 
@@ -225,7 +235,7 @@ export default function AssessmentPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex-1 flex items-center justify-center bg-background">
           <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
         </div>
       }

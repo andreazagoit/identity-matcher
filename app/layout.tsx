@@ -38,12 +38,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <TooltipProvider>
-          <div className="bg-primary text-primary-foreground text-center text-xs font-medium py-1.5 px-4">
-            🚧 Questa piattaforma è in <span className="font-bold">alpha</span> — funzionalità e dati possono cambiare senza preavviso.
+          <div className="flex flex-col" style={{ minHeight: "100dvh" }}>
+            <div className="bg-primary text-primary-foreground text-center text-xs font-medium py-1.5 px-4">
+              🚧 Questa piattaforma è in <span className="font-bold">alpha</span> — funzionalità e dati possono cambiare senza preavviso.
+            </div>
+            <Header />
+            <main className="flex-1 flex flex-col">{children}</main>
+            <Footer />
           </div>
-          <Header />
-          <div className="min-h-[calc(100vh-3.5rem)]">{children}</div>
-          <Footer />
         </TooltipProvider>
       </body>
     </html>

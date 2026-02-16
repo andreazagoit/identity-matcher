@@ -130,20 +130,21 @@ export default function ClientDetailView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full space-y-8">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild className="rounded-full">
           <Link href="/dashboard">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight truncate">
-              {clientName}
-            </h1>
-          </div>
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-1">
+            Client
+          </p>
+          <h1 className="text-2xl font-bold tracking-tight truncate">
+            {clientName}
+          </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Creato il{" "}
             {new Date(createdAt).toLocaleDateString("it-IT", {
@@ -156,51 +157,55 @@ export default function ClientDetailView({
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="users" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="users" className="gap-1.5">
+      <Tabs defaultValue="users" className="w-full flex-col space-y-8">
+        <TabsList className="bg-muted/50 border border-border/50 rounded-full p-1">
+          <TabsTrigger value="users" className="gap-1.5 rounded-full">
             <UsersIcon className="h-3.5 w-3.5" />
             Utenti
           </TabsTrigger>
-          <TabsTrigger value="integration" className="gap-1.5">
+          <TabsTrigger value="integration" className="gap-1.5 rounded-full">
             <CodeIcon className="h-3.5 w-3.5" />
             Sviluppatori
           </TabsTrigger>
-          <TabsTrigger value="config" className="gap-1.5">
+          <TabsTrigger value="config" className="gap-1.5 rounded-full">
             <SettingsIcon className="h-3.5 w-3.5" />
             Configurazione
           </TabsTrigger>
         </TabsList>
 
         {/* ── Users Tab ── */}
-        <TabsContent value="users" className="space-y-6">
-          {/* Stats Squares */}
+        <TabsContent value="users" className="w-full space-y-6">
+          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <Card>
+            <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <UsersIcon className="h-4 w-4" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <UsersIcon className="h-4 w-4 text-primary" />
+                  </div>
                   <CardTitle className="text-sm font-medium">Utenti Totali</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">{stats.totalUsers}</p>
+                <p className="text-4xl font-bold tracking-tight">{stats.totalUsers}</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <UserCheckIcon className="h-4 w-4" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
+                    <UserCheckIcon className="h-4 w-4 text-green-500" />
+                  </div>
                   <CardTitle className="text-sm font-medium">Utenti Attivi</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">{stats.activeUsers}</p>
+                <p className="text-4xl font-bold tracking-tight">{stats.activeUsers}</p>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
             <CardHeader>
               <CardTitle>Lista Utenti</CardTitle>
               <CardDescription>
@@ -210,7 +215,7 @@ export default function ClientDetailView({
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-border/50 hover:bg-transparent">
                     <TableHead className="pl-6">Utente</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Profilo AI</TableHead>
@@ -219,12 +224,12 @@ export default function ClientDetailView({
                 </TableHeader>
                 <TableBody>
                   {users.map((u) => (
-                    <TableRow key={u.id}>
+                    <TableRow key={u.id} className="border-border/50">
                       <TableCell className="pl-6">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={u.image ?? undefined} />
-                            <AvatarFallback className="text-[10px]">
+                            <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
                               {u.name.slice(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
@@ -236,11 +241,11 @@ export default function ClientDetailView({
                       </TableCell>
                       <TableCell>
                         {u.isProfileComplete ? (
-                          <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 gap-1">
+                          <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20 gap-1 rounded-full">
                             <CheckIcon className="h-3 w-3" /> Completato
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                          <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 rounded-full">
                             In sospeso
                           </Badge>
                         )}
@@ -252,8 +257,18 @@ export default function ClientDetailView({
                   ))}
                   {users.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
-                        Ancora nessun utente per questa applicazione.
+                      <TableCell colSpan={4} className="text-center py-16">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/50">
+                            <UsersIcon className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">Ancora nessun utente</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Gli utenti appariranno qui dopo la prima autenticazione.
+                            </p>
+                          </div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )}
@@ -264,9 +279,9 @@ export default function ClientDetailView({
         </TabsContent>
 
         {/* ── Integration Tab ── */}
-        <TabsContent value="integration" className="space-y-6">
+        <TabsContent value="integration" className="w-full space-y-6">
           {/* 1. OAuth Credentials */}
-          <Card>
+          <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">Credenziali OAuth 2.1</CardTitle>
               <CardDescription>
@@ -275,37 +290,24 @@ export default function ClientDetailView({
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2">
+                <CredentialField
+                  label="Client ID"
+                  value={clientOAuthId}
+                  field="clientId"
+                  copiedField={copiedField}
+                  onCopy={copyToClipboard}
+                />
                 <div className="space-y-2">
-                  <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Client ID</Label>
-                  <div className="group relative flex items-center">
-                    <code className="w-full bg-muted/50 px-3 py-2 rounded-md text-xs font-mono border border-border/50 truncate pr-10">
-                      {clientOAuthId}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 h-7 w-7 opacity-70 hover:opacity-100"
-                      onClick={() => copyToClipboard(clientOAuthId, "clientId")}
-                    >
-                      {copiedField === "clientId" ? (
-                        <CheckIcon className="h-3.5 w-3.5 text-green-500" />
-                      ) : (
-                        <Copy className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Client Secret</Label>
+                  <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Client Secret</Label>
                   <div className="group relative flex items-center gap-1">
-                    <code className="w-full bg-muted/50 px-3 py-2 rounded-md text-xs font-mono border border-border/50 truncate pr-16">
+                    <code className="w-full bg-muted/50 px-3 py-2.5 rounded-lg text-xs font-mono border border-border/50 truncate pr-16">
                       {clientSecret}
                     </code>
                     <div className="absolute right-1 flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 opacity-70 hover:opacity-100"
+                        className="h-7 w-7 opacity-70 hover:opacity-100 rounded-md"
                         onClick={() => copyToClipboard(clientSecret, "clientSecret")}
                       >
                         {copiedField === "clientSecret" ? (
@@ -317,7 +319,7 @@ export default function ClientDetailView({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 opacity-70 hover:opacity-100"
+                        className="h-7 w-7 opacity-70 hover:opacity-100 rounded-md"
                         onClick={handleRotateSecret}
                         disabled={secretLoading}
                       >
@@ -333,10 +335,10 @@ export default function ClientDetailView({
               </div>
 
               {/* OAuth Integration Guide */}
-              <div className="space-y-4 pt-4 border-t">
+              <div className="space-y-4 pt-4 border-t border-border/50">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">1. Authorization URL</Label>
-                  <CodeBlock
+                  <InlineCodeBlock
                     onCopy={copyToClipboard}
                     copiedField={copiedField}
                     field="authUrl"
@@ -345,7 +347,7 @@ export default function ClientDetailView({
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">2. Token Endpoint</Label>
-                  <CodeBlock
+                  <InlineCodeBlock
                     onCopy={copyToClipboard}
                     copiedField={copiedField}
                     field="tokenUrl"
@@ -357,7 +359,7 @@ export default function ClientDetailView({
           </Card>
 
           {/* 2. API Key (Server-to-Server) */}
-          <Card>
+          <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">API Key (Matching API)</CardTitle>
               <CardDescription>
@@ -368,14 +370,14 @@ export default function ClientDetailView({
               <div className="space-y-6">
                 {apiKey ? (
                   <div className="group relative flex items-center gap-2">
-                    <code className="w-full bg-muted/50 px-3 py-2 rounded-md text-xs font-mono border border-border/50 truncate pr-20">
+                    <code className="w-full bg-muted/50 px-3 py-2.5 rounded-lg text-xs font-mono border border-border/50 truncate pr-20">
                       {apiKey.substring(0, 12)}••••••••••••••••••••
                     </code>
                     <div className="absolute right-1 flex items-center gap-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 opacity-70 hover:opacity-100"
+                        className="h-7 w-7 opacity-70 hover:opacity-100 rounded-md"
                         onClick={() => copyToClipboard(apiKey, "apiKey")}
                       >
                         {copiedField === "apiKey" ? (
@@ -387,7 +389,7 @@ export default function ClientDetailView({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 opacity-70 hover:opacity-100"
+                        className="h-7 w-7 opacity-70 hover:opacity-100 rounded-md"
                         onClick={handleRotateApiKey}
                         disabled={keyLoading}
                         title="Rigenera API Key"
@@ -401,9 +403,9 @@ export default function ClientDetailView({
                     </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-muted-foreground">
-                    Nessuna API key generata.{" "}
-                    <Button size="sm" variant="outline" onClick={handleRotateApiKey} disabled={keyLoading}>
+                  <div className="text-sm text-muted-foreground flex items-center gap-3">
+                    <span>Nessuna API key generata.</span>
+                    <Button size="sm" variant="outline" onClick={handleRotateApiKey} disabled={keyLoading} className="rounded-full">
                       {keyLoading ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : null}
                       Genera API Key
                     </Button>
@@ -411,9 +413,9 @@ export default function ClientDetailView({
                 )}
 
                 {/* GraphQL Integration Guide */}
-                <div className="space-y-2 pt-4 border-t">
+                <div className="space-y-2 pt-4 border-t border-border/50">
                   <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">GraphQL Matching API</Label>
-                  <CodeBlock
+                  <InlineCodeBlock
                     onCopy={copyToClipboard}
                     copiedField={copiedField}
                     field="graphql"
@@ -427,8 +429,8 @@ export default function ClientDetailView({
         </TabsContent>
 
         {/* ── Config Tab ── */}
-        <TabsContent value="config" className="space-y-6">
-          <Card>
+        <TabsContent value="config" className="w-full space-y-6">
+          <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
             <CardHeader>
               <CardTitle>Impostazioni Client</CardTitle>
               <CardDescription>
@@ -453,7 +455,7 @@ export default function ClientDetailView({
                 />
 
                 <div className="flex items-center gap-3">
-                  <Button type="submit" disabled={configLoading}>
+                  <Button type="submit" disabled={configLoading} className="rounded-full">
                     {configLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
@@ -471,30 +473,69 @@ export default function ClientDetailView({
             </CardContent>
           </Card>
 
-          <Card className="border-destructive/20 bg-destructive/5">
-            <CardHeader>
-              <CardTitle className="text-destructive text-base">
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/[0.03] backdrop-blur-sm p-6">
+            <div className="mb-3">
+              <h3 className="text-base font-semibold text-destructive">
                 Zona Pericolosa
-              </CardTitle>
-              <CardDescription>
+              </h3>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 L&apos;eliminazione del client rimuoverà permanentemente tutte le
                 configurazioni associate.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button variant="destructive" onClick={handleDeleteClient}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Elimina Client
-              </Button>
-            </CardContent>
-          </Card>
+              </p>
+            </div>
+            <Button variant="destructive" onClick={handleDeleteClient} className="rounded-full">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Elimina Client
+            </Button>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-function CodeBlock({
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+function CredentialField({
+  label,
+  value,
+  field,
+  copiedField,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  field: string;
+  copiedField: string | null;
+  onCopy: (text: string, field: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{label}</Label>
+      <div className="group relative flex items-center">
+        <code className="w-full bg-muted/50 px-3 py-2.5 rounded-lg text-xs font-mono border border-border/50 truncate pr-10">
+          {value}
+        </code>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-1 h-7 w-7 opacity-70 hover:opacity-100 rounded-md"
+          onClick={() => onCopy(value, field)}
+        >
+          {copiedField === field ? (
+            <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function InlineCodeBlock({
   value,
   field,
   copiedField,
@@ -506,14 +547,14 @@ function CodeBlock({
   onCopy: (text: string, field: string) => void;
 }) {
   return (
-    <div className="relative">
-      <pre className="bg-muted/50 border rounded-lg p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">
+    <div className="relative rounded-xl border border-border/50 overflow-hidden" style={{ background: "oklch(0.16 0 0)" }}>
+      <pre className="p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all text-muted-foreground leading-relaxed">
         {value}
       </pre>
       <Button
         variant="ghost"
         size="icon"
-        className="absolute top-2 right-2 h-7 w-7"
+        className="absolute top-2 right-2 h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
         onClick={() => onCopy(value, field)}
       >
         {copiedField === field ? (

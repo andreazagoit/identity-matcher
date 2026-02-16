@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { authClient } from "@/lib/client";
 import { Loader2Icon } from "lucide-react";
-import { Container } from "@/components/container";
+
 import { useOAuthFlow } from "@/hooks/use-oauth-flow";
 import {
   mapAuthErrorMessage,
@@ -180,26 +180,26 @@ function SignInContent() {
   // -- render ---------------------------------------------------------------
 
   return (
-    <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
-      <div className="w-full max-w-md">
+    <div className="flex-1 flex items-center justify-center py-12 px-4">
+      <div className="w-full max-w-lg">
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
             <span className="text-xl font-bold text-primary-foreground">ID</span>
           </div>
           <h1 className="text-xl font-semibold text-foreground">Identity Matcher</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-1.5">
             {mode === "login" ? "Accedi al tuo account" : "Crea un nuovo account"}
           </p>
         </div>
 
         {error && (
-          <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-xl mb-4 text-sm">
+          <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-xl mb-5 text-sm">
             {error}
           </div>
         )}
 
-        <Card>
+        <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
           <CardHeader>
             <CardTitle>{mode === "login" ? "Accedi" : "Registrati"}</CardTitle>
             <CardDescription>
@@ -359,7 +359,7 @@ function SignInContent() {
           </CardContent>
         </Card>
       </div>
-    </Container>
+    </div>
   );
 }
 
@@ -371,7 +371,7 @@ export default function SignInPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex-1 flex items-center justify-center bg-background">
           <Loader2Icon className="h-8 w-8 animate-spin text-primary" />
         </div>
       }

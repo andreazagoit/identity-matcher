@@ -26,7 +26,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Copy, Loader2, ExternalLink, ShieldCheck } from "lucide-react";
+import { Plus, Copy, Loader2, ExternalLink, ShieldCheck, CheckIcon, LayoutGridIcon } from "lucide-react";
 import Link from "next/link";
 import { RedirectUriManager } from "./redirect-uri-manager";
 
@@ -39,10 +39,17 @@ interface Client {
 export default function ClientsManager({ initialClients }: { initialClients: Client[] }) {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [newClientData, setNewClientData] = useState<{
     clientId: string;
     clientSecret: string;
   } | null>(null);
+
+  function copyToClipboard(text: string, field: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  }
 
   async function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -54,12 +61,16 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-8">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Identity</h1>
-          <p className="text-muted-foreground mt-1">
-            Gestisci le tue applicazioni OAuth 2.1 e le relative API Key.
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-2">
+            Dashboard
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Le tue applicazioni</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            Gestisci i tuoi client OAuth 2.1 e le relative API Key.
           </p>
         </div>
         
@@ -68,8 +79,8 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
           if (!open) setNewClientData(null);
         }}>
           <DialogTrigger asChild>
-            <Button size="lg">
-              <Plus className="mr-2 h-4 w-4" />
+            <Button size="lg" className="rounded-full gap-2">
+              <Plus className="h-4 w-4" />
               Nuovo Client
             </Button>
           </DialogTrigger>
@@ -91,7 +102,7 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                 <RedirectUriManager name="redirectUris" />
 
                 <DialogFooter className="pt-4">
-                  <Button type="submit" disabled={loading} className="w-full">
+                  <Button type="submit" disabled={loading} className="w-full rounded-full">
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
                     Crea Client
                   </Button>
@@ -99,8 +110,8 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
               </form>
             ) : (
               <div className="space-y-6 py-4">
-                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg space-y-3">
-                  <p className="text-sm font-medium text-green-600 flex items-center">
+                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl space-y-3">
+                  <p className="text-sm font-medium text-green-500 flex items-center">
                     <ShieldCheck className="mr-2 h-4 w-4" />
                     Client creato con successo!
                   </p>
@@ -110,42 +121,50 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
                 </div>
                 
                 <div className="space-y-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground uppercase">Client ID</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Client ID</Label>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 bg-muted p-2 rounded border text-xs font-mono truncate">
+                      <code className="flex-1 bg-muted/50 p-2.5 rounded-lg border border-border/50 text-xs font-mono truncate">
                         {newClientData.clientId}
                       </code>
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9"
-                        onClick={() => navigator.clipboard.writeText(newClientData.clientId)}
+                        className="h-9 w-9 rounded-lg"
+                        onClick={() => copyToClipboard(newClientData.clientId, "newClientId")}
                       >
-                        <Copy className="h-4 w-4" />
+                        {copiedField === "newClientId" ? (
+                          <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
                   
-                  <div className="space-y-1">
-                    <Label className="text-xs text-muted-foreground uppercase">Client Secret</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Client Secret</Label>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 bg-muted p-2 rounded border text-xs font-mono truncate">
+                      <code className="flex-1 bg-muted/50 p-2.5 rounded-lg border border-border/50 text-xs font-mono truncate">
                         {newClientData.clientSecret}
                       </code>
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9"
-                        onClick={() => navigator.clipboard.writeText(newClientData.clientSecret)}
+                        className="h-9 w-9 rounded-lg"
+                        onClick={() => copyToClipboard(newClientData.clientSecret, "newClientSecret")}
                       >
-                        <Copy className="h-4 w-4" />
+                        {copiedField === "newClientSecret" ? (
+                          <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
                 </div>
                 
-                <Button variant="secondary" className="w-full" onClick={() => setIsModalOpen(false)}>
+                <Button variant="secondary" className="w-full rounded-full" onClick={() => setIsModalOpen(false)}>
                   Ho salvato le credenziali
                 </Button>
               </div>
@@ -154,11 +173,12 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
         </Dialog>
       </div>
 
-      <Card>
+      {/* Clients Table */}
+      <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="border-border/50 hover:bg-transparent">
                 <TableHead className="pl-6">Nome</TableHead>
                 <TableHead>Client ID</TableHead>
                 <TableHead className="text-right pr-6">Azioni</TableHead>
@@ -166,18 +186,18 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
             </TableHeader>
             <TableBody>
               {initialClients.map((client) => (
-                <TableRow key={client.id}>
+                <TableRow key={client.id} className="border-border/50">
                   <TableCell className="font-medium pl-6">
                     <span>{client.name}</span>
                   </TableCell>
                   <TableCell>
-                    <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                    <code className="text-xs font-mono bg-muted/50 px-2 py-1 rounded-md border border-border/50">
                       {client.clientId}
                     </code>
                   </TableCell>
                   <TableCell className="text-right pr-6">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" asChild title="Gestisci">
+                      <Button variant="ghost" size="icon" asChild title="Gestisci" className="rounded-lg">
                         <Link href={`/dashboard/${client.id}`}>
                           <ExternalLink className="h-4 w-4" />
                         </Link>
@@ -188,8 +208,18 @@ export default function ClientsManager({ initialClients }: { initialClients: Cli
               ))}
               {initialClients.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
-                    Nessun client registrato.
+                  <TableCell colSpan={4} className="text-center py-16">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/50">
+                        <LayoutGridIcon className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Nessun client registrato</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Crea il tuo primo client OAuth per iniziare.
+                        </p>
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}

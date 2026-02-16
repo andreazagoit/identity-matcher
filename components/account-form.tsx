@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -181,81 +180,85 @@ export default function AccountForm({
     <div className="space-y-8">
       {/* Page Title */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Il mio account</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-2">
+          Account
+        </p>
+        <h1 className="text-3xl font-bold tracking-tight">Il mio account</h1>
+        <p className="text-sm text-muted-foreground mt-1.5">
           Gestisci il tuo profilo, la sicurezza e il questionario di
           compatibilità.
         </p>
       </div>
 
       {/* ── Assessment Status ── */}
-      <Card
-        className={
+      <div
+        className={`rounded-2xl border p-5 backdrop-blur-sm ${
           hasCompletedAssessment
-            ? "border-green-500/20 bg-green-500/5"
-            : "border-primary/20 bg-primary/5"
-        }
+            ? "border-green-500/20 bg-green-500/[0.04]"
+            : "border-primary/20 bg-primary/[0.04]"
+        }`}
       >
-        <CardContent className="py-5">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                  hasCompletedAssessment
-                    ? "bg-green-500/10 text-green-500"
-                    : "bg-primary/10 text-primary"
-                }`}
-              >
-                {hasCompletedAssessment ? (
-                  <CheckIcon className="h-5 w-5" />
-                ) : (
-                  <ClipboardListIcon className="h-5 w-5" />
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium">
-                  {hasCompletedAssessment
-                    ? "Profilo di compatibilità completato"
-                    : "Questionario non ancora compilato"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {hasCompletedAssessment
-                    ? "Il tuo profilo AI è attivo. Puoi rifare il test per aggiornarlo."
-                    : "Completa il questionario per attivare il matching AI."}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant={hasCompletedAssessment ? "outline" : "default"}
-              size="sm"
-              asChild
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                hasCompletedAssessment
+                  ? "bg-green-500/10 text-green-500"
+                  : "bg-primary/10 text-primary"
+              }`}
             >
-              <Link
-                href={`/oauth2/assessment?redirect=/account`}
-                className="gap-1.5 shrink-0"
-              >
-                {hasCompletedAssessment ? (
-                  <>
-                    <RefreshCwIcon className="h-3.5 w-3.5" />
-                    Rifai il test
-                  </>
-                ) : (
-                  <>
-                    <ClipboardListIcon className="h-3.5 w-3.5" />
-                    Compila ora
-                  </>
-                )}
-              </Link>
-            </Button>
+              {hasCompletedAssessment ? (
+                <CheckIcon className="h-5 w-5" />
+              ) : (
+                <ClipboardListIcon className="h-5 w-5" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">
+                {hasCompletedAssessment
+                  ? "Profilo di compatibilità completato"
+                  : "Questionario non ancora compilato"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {hasCompletedAssessment
+                  ? "Il tuo profilo AI è attivo. Puoi rifare il test per aggiornarlo."
+                  : "Completa il questionario per attivare il matching AI."}
+              </p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+          <Button
+            variant={hasCompletedAssessment ? "outline" : "default"}
+            size="sm"
+            asChild
+            className="rounded-full"
+          >
+            <Link
+              href={`/oauth2/assessment?redirect=/account`}
+              className="gap-1.5 shrink-0"
+            >
+              {hasCompletedAssessment ? (
+                <>
+                  <RefreshCwIcon className="h-3.5 w-3.5" />
+                  Rifai il test
+                </>
+              ) : (
+                <>
+                  <ClipboardListIcon className="h-3.5 w-3.5" />
+                  Compila ora
+                </>
+              )}
+            </Link>
+          </Button>
+        </div>
+      </div>
 
       {/* ── Profile Info ── */}
-      <Card>
+      <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <UserIcon className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <UserIcon className="h-4 w-4 text-primary" />
+            </div>
             Informazioni personali
           </CardTitle>
           <CardDescription>Aggiorna i tuoi dati di profilo</CardDescription>
@@ -324,19 +327,19 @@ export default function AccountForm({
             </div>
 
             {profileError && (
-              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-2 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-2.5 rounded-xl text-sm">
                 {profileError}
               </div>
             )}
 
             {profileSuccess && (
-              <div className="bg-green-500/10 border border-green-500/30 text-green-500 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+              <div className="bg-green-500/10 border border-green-500/30 text-green-500 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2">
                 <CheckIcon className="h-4 w-4" />
                 Profilo aggiornato con successo
               </div>
             )}
 
-            <Button type="submit" disabled={profileLoading}>
+            <Button type="submit" disabled={profileLoading} className="rounded-full">
               {profileLoading && (
                 <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
               )}
@@ -347,10 +350,12 @@ export default function AccountForm({
       </Card>
 
       {/* ── Change Password ── */}
-      <Card>
+      <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <ShieldIcon className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <ShieldIcon className="h-4 w-4 text-primary" />
+            </div>
             Sicurezza
           </CardTitle>
           <CardDescription>Modifica la tua password</CardDescription>
@@ -398,19 +403,19 @@ export default function AccountForm({
             </div>
 
             {passwordError && (
-              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-2 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-2.5 rounded-xl text-sm">
                 {passwordError}
               </div>
             )}
 
             {passwordSuccess && (
-              <div className="bg-green-500/10 border border-green-500/30 text-green-500 px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+              <div className="bg-green-500/10 border border-green-500/30 text-green-500 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2">
                 <CheckIcon className="h-4 w-4" />
                 Password aggiornata con successo
               </div>
             )}
 
-            <Button type="submit" disabled={passwordLoading}>
+            <Button type="submit" disabled={passwordLoading} className="rounded-full">
               {passwordLoading && (
                 <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
               )}
@@ -421,10 +426,12 @@ export default function AccountForm({
       </Card>
 
       {/* ── Active Sessions ── */}
-      <Card>
+      <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <MonitorSmartphoneIcon className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <MonitorSmartphoneIcon className="h-4 w-4 text-primary" />
+            </div>
             Sessioni attive
           </CardTitle>
           <CardDescription>
@@ -458,7 +465,7 @@ export default function AccountForm({
                 return (
                   <div
                     key={s.id as string}
-                    className="flex items-center justify-between gap-4 rounded-lg border p-3"
+                    className="flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-background/50 p-4"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -466,7 +473,7 @@ export default function AccountForm({
                           {parseUserAgent(ua)}
                         </p>
                         {isCurrent && (
-                          <span className="shrink-0 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                          <span className="shrink-0 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold uppercase tracking-wider">
                             Corrente
                           </span>
                         )}
@@ -484,7 +491,7 @@ export default function AccountForm({
                         onClick={() =>
                           handleRevokeSession(s.token as string)
                         }
-                        className="shrink-0 text-muted-foreground hover:text-destructive"
+                        className="shrink-0 text-muted-foreground hover:text-destructive rounded-full"
                       >
                         {revokingId === (s.token as string) ? (
                           <Loader2Icon className="h-4 w-4 animate-spin" />
@@ -502,27 +509,28 @@ export default function AccountForm({
       </Card>
 
       {/* ── Sign Out ── */}
-      <Separator />
-
-      <div className="flex justify-between items-center">
-        <div>
-          <p className="text-sm font-medium">Esci dall&apos;account</p>
-          <p className="text-xs text-muted-foreground">
-            Disconnetti la sessione corrente
-          </p>
+      <div className="rounded-2xl border border-destructive/20 bg-destructive/[0.03] backdrop-blur-sm p-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm font-medium">Esci dall&apos;account</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Disconnetti la sessione corrente
+            </p>
+          </div>
+          <Button
+            variant="destructive"
+            onClick={handleSignOut}
+            disabled={signOutLoading}
+            className="rounded-full"
+          >
+            {signOutLoading ? (
+              <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <LogOutIcon className="h-4 w-4 mr-2" />
+            )}
+            Esci
+          </Button>
         </div>
-        <Button
-          variant="destructive"
-          onClick={handleSignOut}
-          disabled={signOutLoading}
-        >
-          {signOutLoading ? (
-            <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <LogOutIcon className="h-4 w-4 mr-2" />
-          )}
-          Esci
-        </Button>
       </div>
     </div>
   );

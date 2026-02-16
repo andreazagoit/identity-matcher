@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import {
-  LayoutDashboardIcon,
-  LogInIcon,
-} from "lucide-react";
+import { LogInIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Container } from "./container";
+import { NavLink } from "./nav-link";
 
 export async function Header() {
   const session = await auth.api.getSession({
@@ -17,7 +15,7 @@ export async function Header() {
   const user = session?.user;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-lg">
+    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/70 backdrop-blur-xl">
       <Container className="flex h-14 items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
@@ -31,16 +29,46 @@ export async function Header() {
           </span>
         </Link>
 
-        {/* Nav */}
+        {/* Center nav */}
+        <nav className="hidden md:flex items-center gap-1 text-sm">
+          <NavLink
+            href="/docs"
+            className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Docs
+          </NavLink>
+          <NavLink
+            href="/pricing"
+            className="px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Pricing
+          </NavLink>
+        </nav>
+
+        {/* Right side */}
         <nav className="flex items-center gap-2">
+          {/* Mobile nav links */}
+          <NavLink
+            href="/docs"
+            className="md:hidden px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Docs
+          </NavLink>
+          <NavLink
+            href="/pricing"
+            className="md:hidden px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Pricing
+          </NavLink>
+
           {user ? (
             <>
-              <Button variant="ghost" size="sm" asChild className="gap-1.5">
-                <Link href="/dashboard">
-                  <LayoutDashboardIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Dashboard</span>
-                </Link>
-              </Button>
+              <NavLink
+                href="/dashboard"
+                className="px-3 py-1.5 rounded-md text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Dashboard
+              </NavLink>
               <Button variant="ghost" size="icon" className="rounded-full h-8 w-8" asChild>
                 <Link href="/account">
                   <Avatar className="h-7 w-7">
@@ -56,7 +84,7 @@ export async function Header() {
               </Button>
             </>
           ) : (
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="rounded-full">
               <Link href="/oauth2/sign-in" className="gap-1.5">
                 <LogInIcon className="h-4 w-4" />
                 Accedi
