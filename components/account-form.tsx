@@ -14,13 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   CheckIcon,
   ClipboardListIcon,
   Loader2Icon,
@@ -28,6 +21,7 @@ import {
   MonitorSmartphoneIcon,
   RefreshCwIcon,
   ShieldIcon,
+  Trash2Icon,
   UserIcon,
   XIcon,
 } from "lucide-react";
@@ -45,20 +39,10 @@ export default function AccountForm({
   sessions: initialSessions,
   hasCompletedAssessment,
 }: AccountFormProps) {
-  // Profile state
-  const [givenName, setGivenName] = useState(
-    (user.givenName as string) || ""
-  );
-  const [familyName, setFamilyName] = useState(
-    (user.familyName as string) || ""
-  );
-  const [birthdate, setBirthdate] = useState(
-    (user.birthdate as string) || ""
-  );
-  const [gender, setGender] = useState((user.gender as string) || "");
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileSuccess, setProfileSuccess] = useState(false);
-  const [profileError, setProfileError] = useState<string | null>(null);
+  const givenName = (user.givenName as string) || "";
+  const familyName = (user.familyName as string) || "";
+  const birthdate = (user.birthdate as string) || "";
+  const gender = (user.gender as string) || "";
 
   // Password state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -72,39 +56,8 @@ export default function AccountForm({
   const [sessions, setSessions] = useState(initialSessions);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [signOutLoading, setSignOutLoading] = useState(false);
-
-  // ── Profile Update ──
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setProfileLoading(true);
-    setProfileError(null);
-    setProfileSuccess(false);
-
-    try {
-      const result = await authClient.updateUser({
-        name: `${givenName} ${familyName}`,
-        givenName,
-        familyName,
-        birthdate,
-        gender: gender || undefined,
-      } as Record<string, unknown>);
-
-      if (result.error) {
-        setProfileError(
-          result.error.message || "Errore nell'aggiornamento del profilo"
-        );
-      } else {
-        setProfileSuccess(true);
-        setTimeout(() => setProfileSuccess(false), 3000);
-      }
-    } catch (err) {
-      setProfileError(
-        err instanceof Error ? err.message : "Errore nell'aggiornamento"
-      );
-    } finally {
-      setProfileLoading(false);
-    }
-  };
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // ── Password Change ──
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -176,18 +129,76 @@ export default function AccountForm({
     }
   };
 
+  // ── Delete Account ──
+  const handleDeleteAccount = async () => {
+    const confirmed = confirm(
+      "Confermi l'eliminazione definitiva dell'account? Questa azione non è reversibile."
+    );
+    if (!confirmed) return;
+
+    setDeleteLoading(true);
+    setDeleteError(null);
+
+    try {
+      const maybeDeleteUser = (authClient as unknown as {
+        deleteUser?: () => Promise<{ error?: { message?: string } }>;
+      }).deleteUser;
+
+      if (typeof maybeDeleteUser === "function") {
+        const result = await maybeDeleteUser();
+        if (result?.error) {
+          setDeleteError(result.error.message || "Impossibile eliminare l'account");
+          setDeleteLoading(false);
+          return;
+        }
+      } else {
+        const response = await fetch("/api/auth/delete-user", {
+          method: "POST",
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          setDeleteError("Impossibile eliminare l'account");
+          setDeleteLoading(false);
+          return;
+        }
+      }
+
+      await authClient.signOut();
+      window.location.href = "/";
+    } catch {
+      setDeleteError("Impossibile eliminare l'account");
+      setDeleteLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Page Title */}
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-2">
-          Account
-        </p>
-        <h1 className="text-3xl font-bold tracking-tight">Il mio account</h1>
-        <p className="text-sm text-muted-foreground mt-1.5">
-          Gestisci il tuo profilo, la sicurezza e il questionario di
-          compatibilità.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-2">
+            Account
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Il mio account</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">
+            Gestisci il tuo profilo, la sicurezza e il questionario di
+            compatibilità.
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          onClick={handleSignOut}
+          disabled={signOutLoading}
+          className="rounded-full shrink-0"
+        >
+          {signOutLoading ? (
+            <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <LogOutIcon className="h-4 w-4 mr-2" />
+          )}
+          Logout
+        </Button>
       </div>
 
       {/* ── Assessment Status ── */}
@@ -261,19 +272,20 @@ export default function AccountForm({
             </div>
             Informazioni personali
           </CardTitle>
-          <CardDescription>Aggiorna i tuoi dati di profilo</CardDescription>
+          <CardDescription>
+            Questi dati non sono modificabili da questa area.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleProfileUpdate} className="space-y-4">
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="givenName">Nome</Label>
                 <Input
                   id="givenName"
                   value={givenName}
-                  onChange={(e) => setGivenName(e.target.value)}
-                  required
-                  placeholder="Mario"
+                  disabled
+                  className="opacity-60"
                 />
               </div>
               <div className="space-y-2">
@@ -281,9 +293,8 @@ export default function AccountForm({
                 <Input
                   id="familyName"
                   value={familyName}
-                  onChange={(e) => setFamilyName(e.target.value)}
-                  required
-                  placeholder="Rossi"
+                  disabled
+                  className="opacity-60"
                 />
               </div>
             </div>
@@ -295,22 +306,26 @@ export default function AccountForm({
                   id="birthdate"
                   type="date"
                   value={birthdate}
-                  onChange={(e) => setBirthdate(e.target.value)}
-                  required
+                  disabled
+                  className="opacity-60"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Genere</Label>
-                <Select value={gender} onValueChange={setGender}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="man">Uomo</SelectItem>
-                    <SelectItem value="woman">Donna</SelectItem>
-                    <SelectItem value="non_binary">Non binario</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="gender">Genere</Label>
+                <Input
+                  id="gender"
+                  value={
+                    gender === "man"
+                      ? "Uomo"
+                      : gender === "woman"
+                        ? "Donna"
+                        : gender === "non_binary"
+                          ? "Non binario"
+                          : gender || "-"
+                  }
+                  disabled
+                  className="opacity-60"
+                />
               </div>
             </div>
 
@@ -325,27 +340,7 @@ export default function AccountForm({
                 L&apos;email non può essere modificata da qui
               </p>
             </div>
-
-            {profileError && (
-              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-2.5 rounded-xl text-sm">
-                {profileError}
-              </div>
-            )}
-
-            {profileSuccess && (
-              <div className="bg-green-500/10 border border-green-500/30 text-green-500 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2">
-                <CheckIcon className="h-4 w-4" />
-                Profilo aggiornato con successo
-              </div>
-            )}
-
-            <Button type="submit" disabled={profileLoading} className="rounded-full">
-              {profileLoading && (
-                <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
-              )}
-              Salva modifiche
-            </Button>
-          </form>
+          </div>
         </CardContent>
       </Card>
 
@@ -508,29 +503,34 @@ export default function AccountForm({
         </CardContent>
       </Card>
 
-      {/* ── Sign Out ── */}
+      {/* ── Delete Account ── */}
       <div className="rounded-2xl border border-destructive/20 bg-destructive/[0.03] backdrop-blur-sm p-6">
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-sm font-medium">Esci dall&apos;account</p>
+            <p className="text-sm font-medium">Elimina account</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Disconnetti la sessione corrente
+              Rimuove definitivamente il tuo account e tutti i dati associati.
             </p>
           </div>
           <Button
             variant="destructive"
-            onClick={handleSignOut}
-            disabled={signOutLoading}
+            onClick={handleDeleteAccount}
+            disabled={deleteLoading}
             className="rounded-full"
           >
-            {signOutLoading ? (
+            {deleteLoading ? (
               <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
             ) : (
-              <LogOutIcon className="h-4 w-4 mr-2" />
+              <Trash2Icon className="h-4 w-4 mr-2" />
             )}
-            Esci
+            Elimina account
           </Button>
         </div>
+        {deleteError && (
+          <div className="mt-3 bg-destructive/10 border border-destructive/30 text-destructive px-4 py-2.5 rounded-xl text-sm">
+            {deleteError}
+          </div>
+        )}
       </div>
     </div>
   );
