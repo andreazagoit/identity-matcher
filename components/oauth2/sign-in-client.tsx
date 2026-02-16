@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,10 +16,21 @@ import {
 import { authClient } from "@/lib/client";
 import { Loader2Icon } from "lucide-react";
 import { Container } from "@/components/container";
+import { useOAuthFlow } from "@/hooks/use-oauth-flow";
+import {
+  mapAuthErrorMessage,
+  extractRedirectUrl,
+  submitFormPost,
+} from "@/lib/oauth-helpers";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 type AuthMode = "login" | "signup";
 type Gender = "" | "man" | "woman" | "non_binary";
-type SignupData = {
+
+interface SignupData {
   givenName: string;
   familyName: string;
   email: string;
@@ -28,115 +38,52 @@ type SignupData = {
   confirmPassword: string;
   birthdate: string;
   gender: Gender;
+}
+
+const EMPTY_SIGNUP: SignupData = {
+  givenName: "",
+  familyName: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+  birthdate: "",
+  gender: "",
 };
 
-function mapAuthErrorMessage(error: { code?: string; message?: string } | null | undefined): string {
-  if (!error) return "Accesso fallito";
-  const code = (error.code || "").toLowerCase();
-
-  if (code === "invalid_email_or_password") return "Email o password non valide";
-  if (code === "account_not_linked") {
-    return "Account non collegato al metodo di accesso scelto. Prova con il provider usato in registrazione oppure reimposta la password.";
-  }
-
-  return error.message || "Accesso fallito";
-}
-
-function parseSignedQuery(search: string) {
-  const params = new URLSearchParams(search);
-  if (!params.has("sig")) return undefined;
-
-  const signedParams = new URLSearchParams();
-  for (const [key, value] of params.entries()) {
-    signedParams.append(key, value);
-    if (key === "sig") break;
-  }
-  return signedParams.toString();
-}
+// ---------------------------------------------------------------------------
+// Main content
+// ---------------------------------------------------------------------------
 
 function SignInContent() {
-  const searchParams = useSearchParams();
   const [mode, setMode] = useState<AuthMode>("login");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Login form
+  // Login fields
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // Signup form
-  const [signupData, setSignupData] = useState<SignupData>({
-    givenName: "",
-    familyName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    birthdate: "",
-    gender: "",
-  });
+  // Signup fields
+  const [signupData, setSignupData] = useState<SignupData>(EMPTY_SIGNUP);
 
-  // Fallback redirect when not in an OAuth flow
-  const fallbackRedirect = searchParams.get("redirect") || "/";
+  const { isOAuthFlow, fallbackRedirect, getOAuthQuery, getContinueUrl } =
+    useOAuthFlow();
 
-  // Check if we're in an OAuth flow (oauth_query params are in the URL)
-  const isOAuthFlow = searchParams.has("client_id") || searchParams.has("sig");
+  // -- helpers --------------------------------------------------------------
 
-  const setFormError = (message: string) => {
+  const fail = (message: string) => {
     setError(message);
     setLoading(false);
   };
 
-  const updateSignupField = <K extends keyof SignupData>(
-    key: K,
-    value: SignupData[K],
-  ) => {
-    setSignupData((prev) => ({ ...prev, [key]: value }));
-  };
+  const updateSignup = <K extends keyof SignupData>(k: K, v: SignupData[K]) =>
+    setSignupData((prev) => ({ ...prev, [k]: v }));
 
-  const redirectTo = (url: string) => {
+  const go = (url: string) => {
     window.location.href = url;
   };
 
-  const submitOAuthEmailLogin = (email: string, password: string) => {
-    const oauthQuery = parseSignedQuery(window.location.search);
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = "/api/auth/sign-in/email";
-    form.style.display = "none";
-
-    const addField = (name: string, value: string) => {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = name;
-      input.value = value;
-      form.appendChild(input);
-    };
-
-    addField("email", email);
-    addField("password", password);
-    if (oauthQuery) addField("oauth_query", oauthQuery);
-
-    document.body.appendChild(form);
-    form.submit();
-  };
-
-  /**
-   * Handle redirect after successful auth.
-   *
-   * During an OAuth flow, the oauthProviderClient plugin automatically
-   * sends oauth_query with sign-in requests. The server responds with
-   * { redirect: true, url: "..." } to continue the authorization flow.
-   *
-   * For sign-up, the plugin does NOT intercept /sign-up/email,
-   * so we must call oauth2.continue({ created: true }) manually.
-   */
-  const handleOAuthRedirect = (data: Record<string, unknown> | null | undefined) => {
-    if (data && typeof data === "object" && "url" in data && typeof data.url === "string") {
-      redirectTo(data.url);
-      return true;
-    }
-    return false;
-  };
+  // -- handlers -------------------------------------------------------------
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,26 +98,28 @@ function SignInContent() {
       });
 
       if (result.error) {
-        setFormError(
-          mapAuthErrorMessage(result.error as { code?: string; message?: string }),
-        );
+        fail(mapAuthErrorMessage(result.error as { code?: string; message?: string }));
         return;
       }
 
-      // The oauthProviderClient plugin attaches oauth_query automatically.
-      // If we're in an OAuth flow, the server returns { redirect: true, url }
-      if (handleOAuthRedirect(result.data as Record<string, unknown>)) return;
+      // Plugin may return { url } to continue the OAuth authorize flow.
+      const url = extractRedirectUrl(result.data as Record<string, unknown>);
+      if (url) { go(url); return; }
 
-      // Normal sign-in (not OAuth flow)
-      redirectTo(fallbackRedirect);
+      // Fallback: resume OAuth via constructed /authorize URL.
+      if (isOAuthFlow) {
+        const continueUrl = getContinueUrl();
+        if (continueUrl) { go(continueUrl); return; }
+      }
+
+      go(fallbackRedirect);
     } catch (err) {
-      // During OAuth authorization, some environments can block fetch redirect handling.
-      // Fallback to native form POST only on network-level failures.
+      // Native form POST fallback for network/CORS issues during OAuth.
       if (isOAuthFlow && err instanceof TypeError) {
-        submitOAuthEmailLogin(loginEmail, loginPassword);
+        submitFormPost(loginEmail, loginPassword, getOAuthQuery());
         return;
       }
-      setFormError(err instanceof Error ? err.message : "Accesso fallito");
+      fail(err instanceof Error ? err.message : "Accesso fallito");
     }
   };
 
@@ -181,17 +130,15 @@ function SignInContent() {
     setError(null);
 
     if (signupData.password !== signupData.confirmPassword) {
-      setFormError("Le password non corrispondono");
+      fail("Le password non corrispondono");
       return;
     }
-
     if (!signupData.birthdate || !/^\d{4}-\d{2}-\d{2}$/.test(signupData.birthdate)) {
-      setFormError("Inserisci una data di nascita valida");
+      fail("Inserisci una data di nascita valida");
       return;
     }
-
     if (!signupData.gender) {
-      setFormError("Seleziona il genere");
+      fail("Seleziona il genere");
       return;
     }
 
@@ -200,47 +147,37 @@ function SignInContent() {
         email: signupData.email,
         password: signupData.password,
         name: `${signupData.givenName} ${signupData.familyName}`,
-        // Additional user fields configured in auth.ts (OIDC naming)
-            ...({
-              givenName: signupData.givenName,
-              familyName: signupData.familyName,
-              birthdate: signupData.birthdate,
-              gender: signupData.gender,
-            } as Record<string, unknown>),
+        ...({
+          givenName: signupData.givenName,
+          familyName: signupData.familyName,
+          birthdate: signupData.birthdate,
+          gender: signupData.gender,
+        } as Record<string, unknown>),
       });
 
       if (result.error) {
-        setFormError(
-          mapAuthErrorMessage(result.error as { code?: string; message?: string }),
-        );
+        fail(mapAuthErrorMessage(result.error as { code?: string; message?: string }));
         return;
       }
 
-      // After signup → redirect to assessment questionnaire.
-      // We pass the final redirect as a query param so the assessment
-      // page can continue the flow once the user completes it.
-
+      // After signup → assessment → then resume OAuth or go home.
       if (isOAuthFlow) {
-        // Rebuild the OAuth authorize URL from the current search params.
-        // The user is now logged in, so re-hitting /authorize will show
-        // the consent page and then redirect back to the client callback.
-        const oauthParams = new URLSearchParams();
-        for (const [key, value] of searchParams.entries()) {
-          oauthParams.set(key, value);
+        const continueUrl = getContinueUrl();
+        if (!continueUrl) {
+          fail("Impossibile continuare il flusso OAuth. Riprova da Matcher.");
+          return;
         }
-        const continueUrl = `/api/auth/oauth2/authorize?${oauthParams.toString()}`;
-
-        // Send user to assessment first, then back to the OAuth flow
-        redirectTo(`/oauth2/assessment?redirect=${encodeURIComponent(continueUrl)}`);
+        go(`/oauth2/assessment?redirect=${encodeURIComponent(continueUrl)}`);
         return;
       }
 
-      // Normal sign-up (not OAuth flow) → go to assessment, then home
-      redirectTo(`/oauth2/assessment?redirect=${encodeURIComponent(fallbackRedirect)}`);
+      go(`/oauth2/assessment?redirect=${encodeURIComponent(fallbackRedirect)}`);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Registrazione fallita");
+      fail(err instanceof Error ? err.message : "Registrazione fallita");
     }
   };
+
+  // -- render ---------------------------------------------------------------
 
   return (
     <Container className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center">
@@ -250,9 +187,7 @@ function SignInContent() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
             <span className="text-xl font-bold text-primary-foreground">ID</span>
           </div>
-          <h1 className="text-xl font-semibold text-foreground">
-            Identity Matcher
-          </h1>
+          <h1 className="text-xl font-semibold text-foreground">Identity Matcher</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {mode === "login" ? "Accedi al tuo account" : "Crea un nuovo account"}
           </p>
@@ -266,15 +201,14 @@ function SignInContent() {
 
         <Card>
           <CardHeader>
-            <CardTitle>
-              {mode === "login" ? "Accedi" : "Registrati"}
-            </CardTitle>
+            <CardTitle>{mode === "login" ? "Accedi" : "Registrati"}</CardTitle>
             <CardDescription>
               {mode === "login"
                 ? "Inserisci le tue credenziali per continuare"
                 : "Compila i dati per creare il tuo account"}
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             {mode === "login" ? (
               <form onSubmit={handleLogin} className="space-y-4">
@@ -315,7 +249,7 @@ function SignInContent() {
                     <Input
                       id="signup-givenname"
                       value={signupData.givenName}
-                      onChange={(e) => updateSignupField("givenName", e.target.value)}
+                      onChange={(e) => updateSignup("givenName", e.target.value)}
                       required
                       placeholder="Mario"
                     />
@@ -325,7 +259,7 @@ function SignInContent() {
                     <Input
                       id="signup-familyname"
                       value={signupData.familyName}
-                      onChange={(e) => updateSignupField("familyName", e.target.value)}
+                      onChange={(e) => updateSignup("familyName", e.target.value)}
                       required
                       placeholder="Rossi"
                     />
@@ -338,7 +272,7 @@ function SignInContent() {
                     id="signup-email"
                     type="email"
                     value={signupData.email}
-                    onChange={(e) => updateSignupField("email", e.target.value)}
+                    onChange={(e) => updateSignup("email", e.target.value)}
                     required
                     placeholder="tu@esempio.com"
                     autoComplete="email"
@@ -352,7 +286,7 @@ function SignInContent() {
                       id="signup-birthdate"
                       type="date"
                       value={signupData.birthdate}
-                      onChange={(e) => updateSignupField("birthdate", e.target.value)}
+                      onChange={(e) => updateSignup("birthdate", e.target.value)}
                       required
                     />
                   </div>
@@ -360,7 +294,7 @@ function SignInContent() {
                     <Label>Genere</Label>
                     <Select
                       value={signupData.gender}
-                      onValueChange={(v) => updateSignupField("gender", v as Gender)}
+                      onValueChange={(v) => updateSignup("gender", v as Gender)}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Seleziona..." />
@@ -380,7 +314,7 @@ function SignInContent() {
                     id="signup-password"
                     type="password"
                     value={signupData.password}
-                    onChange={(e) => updateSignupField("password", e.target.value)}
+                    onChange={(e) => updateSignup("password", e.target.value)}
                     required
                     minLength={8}
                     placeholder="Minimo 8 caratteri"
@@ -394,7 +328,7 @@ function SignInContent() {
                     id="signup-confirm"
                     type="password"
                     value={signupData.confirmPassword}
-                    onChange={(e) => updateSignupField("confirmPassword", e.target.value)}
+                    onChange={(e) => updateSignup("confirmPassword", e.target.value)}
                     required
                     placeholder="Ripeti la password"
                     autoComplete="new-password"
@@ -411,29 +345,16 @@ function SignInContent() {
             <Separator className="my-6" />
 
             <div className="text-center">
-              {mode === "login" ? (
-                <p className="text-sm text-muted-foreground">
-                  Non hai un account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => { setMode("signup"); setError(null); }}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Registrati
-                  </button>
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Hai già un account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => { setMode("login"); setError(null); }}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Accedi
-                  </button>
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground">
+                {mode === "login" ? "Non hai un account? " : "Hai già un account? "}
+                <button
+                  type="button"
+                  onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(null); }}
+                  className="text-primary hover:underline font-medium"
+                >
+                  {mode === "login" ? "Registrati" : "Accedi"}
+                </button>
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -441,6 +362,10 @@ function SignInContent() {
     </Container>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Page wrapper with Suspense boundary
+// ---------------------------------------------------------------------------
 
 export default function SignInPage() {
   return (
