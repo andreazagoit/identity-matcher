@@ -3,7 +3,8 @@ import {
   text,
   timestamp,
   boolean,
-  real,
+  index,
+  geometry,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -12,29 +13,34 @@ import {
  * Core better-auth fields + custom profile data.
  * Location is updated by client apps via GraphQL.
  */
-export const user = pgTable("user", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").default(false).notNull(),
-  image: text("image"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
+export const user = pgTable(
+  "user",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    email: text("email").notNull().unique(),
+    emailVerified: boolean("email_verified").default(false).notNull(),
+    image: text("image"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
 
-  // Profile data (OIDC standard naming)
-  givenName: text("given_name").notNull(),
-  familyName: text("family_name").notNull(),
-  birthdate: text("birthdate").notNull(),
-  gender: text("gender").notNull(),
+    // Profile data (OIDC standard naming)
+    givenName: text("given_name").notNull(),
+    familyName: text("family_name").notNull(),
+    birthdate: text("birthdate").notNull(),
+    gender: text("gender").notNull(),
 
-  // Geolocation (updated by client apps via GraphQL)
-  latitude: real("latitude"),
-  longitude: real("longitude"),
-  locationUpdatedAt: timestamp("location_updated_at"),
-});
+    // Geolocation (updated by client apps via GraphQL)
+    location: geometry("location", { type: "point", mode: "xy", srid: 4326 }),
+    locationUpdatedAt: timestamp("location_updated_at"),
+  },
+  (table) => [
+    index("user_location_gist_idx").using("gist", table.location),
+  ],
+);
 
 // ── Types ─────────────────────────────────────────────────────────
 

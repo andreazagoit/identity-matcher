@@ -30,6 +30,18 @@ type SignupData = {
   gender: Gender;
 };
 
+function mapAuthErrorMessage(error: { code?: string; message?: string } | null | undefined): string {
+  if (!error) return "Accesso fallito";
+  const code = (error.code || "").toLowerCase();
+
+  if (code === "invalid_email_or_password") return "Email o password non valide";
+  if (code === "account_not_linked") {
+    return "Account non collegato al metodo di accesso scelto. Prova con il provider usato in registrazione oppure reimposta la password.";
+  }
+
+  return error.message || "Accesso fallito";
+}
+
 function parseSignedQuery(search: string) {
   const params = new URLSearchParams(search);
   if (!params.has("sig")) return undefined;
@@ -132,12 +144,6 @@ function SignInContent() {
     setLoading(true);
     setError(null);
 
-    // In OAuth flow, prefer native form POST to avoid fetch CORS issues on cross-origin redirects.
-    if (isOAuthFlow) {
-      submitOAuthEmailLogin(loginEmail, loginPassword);
-      return;
-    }
-
     try {
       const result = await authClient.signIn.email({
         email: loginEmail,
@@ -145,7 +151,9 @@ function SignInContent() {
       });
 
       if (result.error) {
-        setFormError(result.error.message || "Credenziali non valide");
+        setFormError(
+          mapAuthErrorMessage(result.error as { code?: string; message?: string }),
+        );
         return;
       }
 
@@ -156,6 +164,12 @@ function SignInContent() {
       // Normal sign-in (not OAuth flow)
       redirectTo(fallbackRedirect);
     } catch (err) {
+      // During OAuth authorization, some environments can block fetch redirect handling.
+      // Fallback to native form POST only on network-level failures.
+      if (isOAuthFlow && err instanceof TypeError) {
+        submitOAuthEmailLogin(loginEmail, loginPassword);
+        return;
+      }
       setFormError(err instanceof Error ? err.message : "Accesso fallito");
     }
   };
@@ -196,7 +210,9 @@ function SignInContent() {
       });
 
       if (result.error) {
-        setFormError(result.error.message || "Registrazione fallita");
+        setFormError(
+          mapAuthErrorMessage(result.error as { code?: string; message?: string }),
+        );
         return;
       }
 

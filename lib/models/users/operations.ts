@@ -93,8 +93,7 @@ export async function updateUserLocation(
   const [updated] = await db
     .update(user)
     .set({
-      latitude,
-      longitude,
+      location: { x: longitude, y: latitude },
       locationUpdatedAt: new Date(),
     })
     .where(eq(user.id, userId))

@@ -36,6 +36,7 @@ export interface ProfileMatch {
     birthdate: string;
   };
   similarity: number;
+  distance: number | null;
   breakdown: {
     psychological: number;
     values: number;
@@ -59,6 +60,8 @@ export interface FindMatchesOptions {
   minAge?: number;
   /** Maximum age (inclusive) */
   maxAge?: number;
+  /** Maximum distance in km (default 50, requires user location) */
+  maxDistance: number;
 }
 
 // ============================================
@@ -161,6 +164,7 @@ export async function findMatches(
     gender,
     minAge,
     maxAge,
+    maxDistance = 50,
   } = options;
 
   const CANDIDATES = 200;
@@ -168,6 +172,16 @@ export async function findMatches(
   const currentProfile = await getProfileByUserId(userId);
   if (!currentProfile?.psychologicalEmbedding) {
     throw new Error("Profile not found. Complete the assessment first.");
+  }
+
+  // Fetch requesting user's location for distance filtering
+  const requestingUser = await db.query.user.findFirst({
+    where: eq(user.id, userId),
+    columns: { location: true },
+  });
+
+  if (!requestingUser?.location) {
+    throw new Error("Location not set. Update location first.");
   }
 
   const psychEmbedding = currentProfile.psychologicalEmbedding as number[];
@@ -196,6 +210,13 @@ export async function findMatches(
     );
   }
 
+  const requesterPoint = sql`(SELECT ${user.location} FROM ${user} WHERE ${user.id} = ${userId})`;
+  // Distance filter (PostGIS): only users within maxDistance km
+  filterConditions.push(
+    sql`${user.location} IS NOT NULL`,
+    sql`ST_DWithin(${user.location}::geography, ${requesterPoint}::geography, ${maxDistance * 1000})`,
+  );
+
   // Scope to users with consent for this client
   if (clientId) {
     const usersWithConsent = db
@@ -216,6 +237,7 @@ export async function findMatches(
     .select({
       profile: profiles,
       user: user,
+      distanceKm: sql<number>`ST_Distance(${user.location}::geography, ${requesterPoint}::geography) / 1000.0`,
       psychSimilarity: sql<number>`1 - (${cosineDistance(
         profiles.psychologicalEmbedding,
         psychEmbedding,
@@ -273,6 +295,7 @@ export async function findMatches(
         birthdate: candidate.user.birthdate,
       },
       similarity,
+      distance: candidate.distanceKm,
       breakdown: {
         psychological: psychSim,
         values: valuesSim,

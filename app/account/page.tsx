@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Container } from "@/components/container";
 import { hasCompleteProfile } from "@/lib/models/profiles/operations";
-import AccountForm from "./account-form";
+import AccountForm from "@/components/account-form";
 
 export default async function AccountPage() {
   const session = await auth.api.getSession({

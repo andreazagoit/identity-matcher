@@ -58,15 +58,28 @@ function AssessmentContent() {
     setError(null);
 
     try {
-      const res = await fetch("/api/assessment", {
+      const res = await fetch("/api/graphql", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({
+          query: `
+            mutation SubmitAssessment($answers: JSON!) {
+              submitAssessment(answers: $answers) {
+                success
+                profileComplete
+              }
+            }
+          `,
+          variables: { answers },
+        }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Errore nel salvataggio");
+      const data = await res.json();
+
+      if (!res.ok || data.errors) {
+        throw new Error(
+          data.errors?.[0]?.message || data.error || "Errore nel salvataggio"
+        );
       }
 
       setCompleted(true);

@@ -62,16 +62,6 @@ export const auth = betterAuth({
         required: true,
         input: true,
       },
-      latitude: {
-        type: "number",
-        required: false,
-        input: false, // Updated via GraphQL only
-      },
-      longitude: {
-        type: "number",
-        required: false,
-        input: false,
-      },
       locationUpdatedAt: {
         type: "date",
         required: false,
@@ -94,23 +84,6 @@ export const auth = betterAuth({
       accessTokenExpiresIn: 3600, // 1 hour
       refreshTokenExpiresIn: 30 * 24 * 60 * 60, // 30 days
       scopes: ["openid", "profile", "email", "offline_access", "location"],
-
-      // Include additional user fields in the /oauth2/userinfo response
-      // so client apps (e.g. @matcher) get the full profile after OAuth
-      customUserInfoClaims: ({ user }) => {
-        const locUpdated = user.locationUpdatedAt as Date | null | undefined;
-        return {
-          // OIDC standard claims (snake_case)
-          given_name: user.givenName,
-          family_name: user.familyName,
-          birthdate: user.birthdate,
-          gender: user.gender,
-          // Additional claims
-          latitude: user.latitude,
-          longitude: user.longitude,
-          locationUpdatedAt: locUpdated?.toISOString?.() || null,
-        };
-      },
     }),
     nextCookies(),
   ],
