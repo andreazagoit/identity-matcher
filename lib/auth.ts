@@ -86,14 +86,10 @@ export const auth = betterAuth({
   },
 
   plugins: [
-    jwt(),
-    emailOTP({
-      async sendVerificationOTP({ email, otp, type }) {
-        await sendOTPEmail(email, otp, type);
+    jwt({
+      jwt: {
+        expirationTime: "1h",
       },
-      otpLength: 6,
-      expiresIn: 300, // 5 minutes
-      disableSignUp: true, // signup handled separately (needs profile fields)
     }),
     oauthProvider({
       loginPage: "/oauth2/sign-in",
@@ -105,6 +101,14 @@ export const auth = betterAuth({
         oauthAuthServerConfig: true,
         openidConfig: true,
       },
+    }),
+    emailOTP({
+      async sendVerificationOTP({ email, otp, type }) {
+        await sendOTPEmail(email, otp, type);
+      },
+      otpLength: 6,
+      expiresIn: 300, // 5 minutes
+      disableSignUp: true, // signup handled separately (needs profile fields)
     }),
     nextCookies(),
   ],
