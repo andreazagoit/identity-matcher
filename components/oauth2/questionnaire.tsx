@@ -58,7 +58,7 @@ export function Questionnaire({ onComplete, onSkip }: QuestionnaireProps) {
   const [showingSectionIntro, setShowingSectionIntro] = useState(true);
 
   const currentSection = SECTIONS[currentSectionIndex];
-  const questions = QUESTIONS[currentSection];
+  const questions = QUESTIONS[currentSection] || [];
   const currentQuestion = questions[currentQuestionIndex];
 
   // Calculate progress
@@ -66,6 +66,7 @@ export function Questionnaire({ onComplete, onSkip }: QuestionnaireProps) {
   const progress = (totalAnswered / TOTAL_QUESTIONS) * 100;
 
   const handleClosedAnswer = (value: number) => {
+    if (!currentQuestion) return;
     setAnswers((prev) => ({
       ...prev,
       [currentQuestion.id]: value,
@@ -76,6 +77,7 @@ export function Questionnaire({ onComplete, onSkip }: QuestionnaireProps) {
   };
 
   const handleOpenAnswer = (text: string) => {
+    if (!currentQuestion) return;
     setAnswers((prev) => ({
       ...prev,
       [currentQuestion.id]: text,
@@ -99,9 +101,11 @@ export function Questionnaire({ onComplete, onSkip }: QuestionnaireProps) {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex((prev) => prev - 1);
     } else if (currentSectionIndex > 0) {
-      setCurrentSectionIndex((prev) => prev - 1);
-      const prevSectionQuestions =
-        QUESTIONS[SECTIONS[currentSectionIndex - 1]];
+      const prevSectionIndex = currentSectionIndex - 1;
+      const prevSection = SECTIONS[prevSectionIndex];
+      const prevSectionQuestions = QUESTIONS[prevSection];
+      
+      setCurrentSectionIndex(prevSectionIndex);
       setCurrentQuestionIndex(prevSectionQuestions.length - 1);
       setShowingSectionIntro(false);
     }
@@ -113,11 +117,13 @@ export function Questionnaire({ onComplete, onSkip }: QuestionnaireProps) {
     currentSectionIndex === 0 && currentQuestionIndex === 0;
   const isLastQuestion =
     currentSectionIndex === SECTIONS.length - 1 &&
-    currentQuestionIndex === questions.length - 1;
+    currentQuestionIndex === (questions.length || 1) - 1;
 
   // Section intro screen
   if (showingSectionIntro) {
     const sectionInfo = SECTION_LABELS[currentSection];
+    if (!sectionInfo) return null;
+
     return (
       <div className="space-y-6">
         <div className="text-center mb-8">
@@ -145,6 +151,8 @@ export function Questionnaire({ onComplete, onSkip }: QuestionnaireProps) {
       </div>
     );
   }
+
+  if (!currentQuestion) return null;
 
   // Get scale labels for current question
   const scaleLabels =

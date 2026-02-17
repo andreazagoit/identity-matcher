@@ -30,13 +30,6 @@ export const metadata: Metadata = {
 
 const quickLinks = [
   {
-    icon: <ShieldCheckIcon className="h-5 w-5" />,
-    title: "Quick Start",
-    description:
-      "Configura Identity Matcher come provider OAuth2/OIDC in 4 step.",
-    href: "#quick-start",
-  },
-  {
     icon: <KeyIcon className="h-5 w-5" />,
     title: "Endpoint e scopes",
     description:
@@ -49,6 +42,13 @@ const quickLinks = [
     description:
       "Interroga i match di compatibilità con Bearer token o API key.",
     href: "#graphql",
+  },
+  {
+    icon: <ShieldCheckIcon className="h-5 w-5" />,
+    title: "Next.js & Better Auth",
+    description:
+      "Guida specifica per integrare Identity Matcher nel tuo progetto Next.js.",
+    href: "/docs/nextjs",
   },
   {
     icon: <TriangleAlertIcon className="h-5 w-5" />,
@@ -74,18 +74,14 @@ export default function DocsPage() {
               Documentazione
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-5">
-              Integra Identity Matcher
+              Documentazione
               <span className="block text-muted-foreground mt-1">
-                nella tua app Next.js
+                Identity Matcher
               </span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
-              Guida passo-passo per utilizzare Identity Matcher come provider
-              OIDC in un progetto Next.js con{" "}
-              <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono">
-                better-auth
-              </code>
-              . Discovery automatico, PKCE, consent e GraphQL API.
+              Tutto quello che ti serve per integrare il matching basato su AI
+              nella tua piattaforma. Endpoint OIDC standard e API GraphQL flessibili.
             </p>
             <div className="mt-7 flex justify-center">
               <Button asChild className="rounded-full">
@@ -132,250 +128,8 @@ export default function DocsPage() {
         </FadeUpStagger>
       </Container>
 
-      {/* ── Prerequisiti ── */}
-      <section
-        className="border-t border-border/50 bg-card/30 py-20 sm:py-24"
-        id="prerequisites"
-      >
-        <Container>
-          <SectionTitle
-            kicker="Prerequisiti"
-            title="Prima di iniziare"
-            description="Cosa ti serve per integrare Identity Matcher nella tua applicazione."
-          />
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <PrerequisiteCard
-              title="Account Identity Matcher"
-              description="Registrati su Identity Matcher e crea un client OAuth dalla dashboard."
-            />
-            <PrerequisiteCard
-              title="Progetto Next.js"
-              description="Un'app Next.js (App Router consigliato) con un database configurato."
-            />
-            <PrerequisiteCard
-              title="better-auth"
-              description={
-                <>
-                  Installa{" "}
-                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-                    better-auth
-                  </code>{" "}
-                  nel tuo progetto con il plugin{" "}
-                  <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-                    genericOAuth
-                  </code>
-                  .
-                </>
-              }
-            />
-          </div>
-        </Container>
-      </section>
-
-      {/* ── Quick Start ── */}
-      <section className="py-20 sm:py-24" id="quick-start">
-        <Container>
-          <SectionTitle
-            kicker="Quick Start"
-            title="Integrazione in 4 step"
-            description="Configura Identity Matcher come provider OIDC nella tua app Next.js con better-auth."
-          />
-
-          <div className="space-y-10">
-            {/* Step 1 */}
-            <Step number="1" title="Installa le dipendenze">
-              <CodeBlock language="bash" filename="Terminal">
-                {`npm install better-auth`}
-              </CodeBlock>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Assicurati di avere anche un database supportato (PostgreSQL,
-                MySQL, SQLite) e il relativo driver configurato.
-              </p>
-            </Step>
-
-            {/* Step 2 */}
-            <Step number="2" title="Configura le variabili ambiente">
-              <CodeBlock language="bash" filename=".env.local">
-                {`# URL del server Identity Matcher
-IDENTITY_MATCHER_URL=${process.env.NEXT_PUBLIC_APP_URL}
-
-# Credenziali OAuth (dalla dashboard Identity Matcher)
-IDENTITY_MATCHER_CLIENT_ID=il-tuo-client-id
-IDENTITY_MATCHER_CLIENT_SECRET=il-tuo-client-secret`}
-              </CodeBlock>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Puoi trovare{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-                  CLIENT_ID
-                </code>{" "}
-                e{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-                  CLIENT_SECRET
-                </code>{" "}
-                nella sezione <strong>Integrazione</strong> del tuo client nella
-                dashboard.
-              </p>
-            </Step>
-
-            {/* Step 3 */}
-            <Step number="3" title="Configura better-auth (server + client)">
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Crea il file di configurazione server-side. Il plugin{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-                  genericOAuth
-                </code>{" "}
-                legge automaticamente tutti gli endpoint dal discovery OIDC.
-              </p>
-
-              <CodeBlock language="typescript" filename="lib/auth.ts">
-                {`import { betterAuth } from "better-auth";
-import { genericOAuth } from "better-auth/plugins";
-import { nextCookies } from "better-auth/next-js";
-
-const identityMatcherUrl = process.env.IDENTITY_MATCHER_URL!;
-
-export const auth = betterAuth({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL!,
-  basePath: "/api/auth",
-
-  // ... database config, etc.
-
-  plugins: [
-    genericOAuth({
-      config: [
-        {
-          providerId: "identitymatcher",
-          discoveryUrl: \`\${identityMatcherUrl}/api/auth/.well-known/openid-configuration\`,
-          clientId: process.env.IDENTITY_MATCHER_CLIENT_ID!,
-          clientSecret: process.env.IDENTITY_MATCHER_CLIENT_SECRET!,
-          pkce: true,
-          prompt: "consent",
-          scopes: ["openid", "profile", "email"],
-        },
-      ],
-    }),
-    nextCookies(),
-  ],
-
-  // Consigliato: abilita il linking automatico degli account
-  account: {
-    accountLinking: {
-      enabled: true,
-      trustedProviders: ["identitymatcher"],
-    },
-  },
-});`}
-              </CodeBlock>
-
-              <div className="mt-4">
-                <CodeBlock language="typescript" filename="lib/auth-client.ts">
-                  {`import { createAuthClient } from "better-auth/react";
-import { genericOAuthClient } from "better-auth/client/plugins";
-
-export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_APP_URL!,
-  plugins: [genericOAuthClient()],
-});
-
-export const { signIn, signOut, useSession } = authClient;`}
-                </CodeBlock>
-              </div>
-
-              <div className="mt-4">
-                <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                  Esponi le API route di better-auth nel tuo progetto:
-                </p>
-                <CodeBlock language="typescript" filename="app/api/auth/[...all]/route.ts">
-                  {`import { auth } from "@/lib/auth";
-import { toNextJsHandler } from "better-auth/next-js";
-
-export const { GET, POST } = toNextJsHandler(auth);`}
-                </CodeBlock>
-              </div>
-            </Step>
-
-            {/* Step 4 */}
-            <Step number="4" title="Avvia il login">
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Chiama{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-                  signIn.oauth2()
-                </code>{" "}
-                per avviare il flusso OAuth2 con Identity Matcher. L&apos;utente
-                verrà reindirizzato alla pagina di login/consenso e poi
-                riportato alla tua app.
-              </p>
-
-              <CodeBlock language="tsx" filename="components/login-button.tsx">
-                {`"use client";
-
-import { signIn } from "@/lib/auth-client";
-
-export function LoginButton() {
-  return (
-    <button
-      onClick={() =>
-        signIn.oauth2({
-          providerId: "identitymatcher",
-          callbackURL: "/dashboard", // dove tornare dopo il login
-        })
-      }
-    >
-      Accedi con Identity Matcher
-    </button>
-  );
-}`}
-              </CodeBlock>
-            </Step>
-          </div>
-        </Container>
-      </section>
-
-      {/* ── Flusso OAuth2 ── */}
-      <section
-        className="border-t border-border/50 bg-card/30 py-20 sm:py-24"
-        id="flow"
-      >
-        <Container>
-          <SectionTitle
-            kicker="Come funziona"
-            title="Il flusso OAuth2 / OIDC"
-            description="Cosa succede quando un utente clicca il pulsante di login."
-          />
-
-          <div className="space-y-3">
-            <FlowStep
-              number="1"
-              title="Redirect ad authorize"
-              description="better-auth costruisce l'URL di authorization con PKCE, scopes e state, e reindirizza l'utente a Identity Matcher."
-            />
-            <FlowStep
-              number="2"
-              title="Login e consenso"
-              description="L'utente si autentica su Identity Matcher (o crea un account) e approva i permessi richiesti."
-            />
-            <FlowStep
-              number="3"
-              title="Callback con authorization code"
-              description="Identity Matcher reindirizza l'utente alla tua app con un codice temporaneo nell'URL."
-            />
-            <FlowStep
-              number="4"
-              title="Scambio code → token"
-              description="better-auth scambia il codice con access token e ID token tramite il token endpoint."
-            />
-            <FlowStep
-              number="5"
-              title="Sessione creata"
-              description="L'utente è autenticato nella tua app. I dati del profilo OIDC vengono salvati nel database."
-            />
-          </div>
-        </Container>
-      </section>
-
       {/* ── Endpoint ── */}
-      <section className="py-20 sm:py-24" id="endpoints">
+      <section className="border-t border-border/50 bg-card/30 py-20 sm:py-24" id="endpoints">
         <Container>
           <SectionTitle
             kicker="Reference"
@@ -673,7 +427,38 @@ query {
       </section>
 
       {/* ── Troubleshooting ── */}
-      <section className="py-20 sm:py-24" id="troubleshooting">
+      <section className="py-20 sm:py-24 border-t border-border/50" id="troubleshooting">
+        <Container>
+          <SectionTitle
+            kicker="Frameworks"
+            title="Guide specifiche"
+            description="Utilizza le nostre guide dedicate per integrare Identity Matcher nei framework più popolari."
+          />
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <Link
+              href="/docs/nextjs"
+              className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-6 hover:border-primary/30 transition-all"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <ShieldCheckIcon className="h-5 w-5" />
+                </div>
+                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">Next.js + Better Auth</h3>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                La via più veloce per integrare Identity Matcher in Next.js con gestione automatica di sessioni e token.
+              </p>
+              <div className="mt-4 flex items-center gap-2 text-xs font-medium text-primary">
+                Leggi la guida <ArrowRightIcon className="h-3 w-3 transition-transform group-hover:translate-x-1" />
+              </div>
+            </Link>
+          </div>
+        </Container>
+      </section>
+
+      {/* ── Troubleshooting ── */}
+      <section className="py-20 sm:py-24 border-t border-border/50 bg-card/30" id="troubleshooting">
         <Container>
           <SectionTitle
             kicker="Troubleshooting"

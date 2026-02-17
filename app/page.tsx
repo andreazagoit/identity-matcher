@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/code-block";
 import {
   HeartHandshakeIcon,
   BrainCircuitIcon,
@@ -37,7 +38,7 @@ export default async function Home() {
   return (
     <>
       {/* ━━━━━━━━━━ HERO ━━━━━━━━━━ */}
-      <section className="relative isolate overflow-hidden py-28 sm:py-36 lg:py-44">
+      <section className="relative isolate overflow-x-clip py-28 sm:py-36 lg:py-44">
         <GradientBlob className="-top-40 left-1/4 h-[600px] w-[600px] bg-primary/20" />
         <GradientBlob className="top-20 right-0 h-[400px] w-[500px] bg-chart-2/15" />
 
@@ -48,7 +49,7 @@ export default async function Home() {
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary backdrop-blur-sm">
               <SparklesIcon className="h-3 w-3" />
               Compatibilità basata su intelligenza artificiale
-            </div>
+          </div>
           </FadeIn>
 
           <FadeIn delay={0.1}>
@@ -57,7 +58,7 @@ export default async function Home() {
               <span className="bg-gradient-to-r from-primary via-chart-2 to-chart-1 bg-clip-text text-transparent">
                 davvero compatibili.
               </span>
-            </h1>
+          </h1>
           </FadeIn>
 
           <FadeIn delay={0.2}>
@@ -70,18 +71,18 @@ export default async function Home() {
 
           <FadeIn delay={0.35}>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              {session ? (
-                <>
+            {session ? (
+              <>
                   <Button
                     size="lg"
                     asChild
                     className="h-12 px-8 text-base rounded-full shadow-lg shadow-primary/25"
                   >
-                    <Link href="/dashboard" className="gap-2">
-                      <LayoutDashboardIcon className="h-4 w-4" />
+                  <Link href="/dashboard" className="gap-2">
+                    <LayoutDashboardIcon className="h-4 w-4" />
                       Dashboard
-                    </Link>
-                  </Button>
+                  </Link>
+                </Button>
                   <Button
                     size="lg"
                     variant="outline"
@@ -90,22 +91,22 @@ export default async function Home() {
                   >
                     <Link href="/docs" className="gap-2">
                       Documentazione
-                      <ArrowRightIcon className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </>
-              ) : (
-                <>
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
                   <Button
                     size="lg"
                     asChild
                     className="h-12 px-8 text-base rounded-full shadow-lg shadow-primary/25"
                   >
-                    <Link href="/oauth2/sign-in" className="gap-2">
-                      <LogInIcon className="h-4 w-4" />
-                      Inizia gratis
-                    </Link>
-                  </Button>
+                  <Link href="/oauth2/sign-in" className="gap-2">
+                    <LogInIcon className="h-4 w-4" />
+                    Inizia gratis
+                  </Link>
+                </Button>
                   <Button
                     size="lg"
                     variant="outline"
@@ -114,11 +115,35 @@ export default async function Home() {
                   >
                     <Link href="/docs" className="gap-2">
                       Documentazione
-                      <ArrowRightIcon className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </>
-              )}
+                    <ArrowRightIcon className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </>
+            )}
+          </div>
+          </FadeIn>
+
+          {/* ── macOS-style code window ── */}
+          <FadeIn delay={0.5}>
+            <div className="mx-auto mt-16 max-w-3xl">
+              <MacOSWindow filename="app/matches/page.tsx">
+{`import { gql } from "@apollo/client";
+
+const FIND_MATCHES = gql\`
+  query FindMatches($maxDistance: Float!, $limit: Int) {
+    findMatches(maxDistance: $maxDistance, limit: $limit) {
+      user { id name givenName image }
+      similarity
+      distance
+    }
+  }
+\`;
+
+const { data } = await client.query({
+  query: FIND_MATCHES,
+  variables: { maxDistance: 50, limit: 10 },
+});`}
+              </MacOSWindow>
             </div>
           </FadeIn>
         </Container>
@@ -159,7 +184,7 @@ export default async function Home() {
                 </div>
                 <div className="mt-1 text-sm text-muted-foreground">
                   {stat.label}
-                </div>
+        </div>
               </FadeUpItem>
             ))}
           </FadeUpStagger>
@@ -167,7 +192,7 @@ export default async function Home() {
       </section>
 
       {/* ━━━━━━━━━━ HOW IT WORKS ━━━━━━━━━━ */}
-      <section className="relative py-28 sm:py-36">
+      <section className="relative overflow-x-clip py-28 sm:py-36">
         <GradientBlob className="top-0 -right-40 h-[500px] w-[500px] bg-chart-1/10" />
 
         <Container>
@@ -228,23 +253,23 @@ export default async function Home() {
           </FadeIn>
 
           <FadeUpStagger className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard
-              icon={<BrainCircuitIcon className="h-5 w-5" />}
+          <FeatureCard
+            icon={<BrainCircuitIcon className="h-5 w-5" />}
               title="Profilo psicometrico AI"
               description="Il questionario analizza personalità, valori, stile relazionale e interessi. L'AI genera embeddings vettoriali su 4 assi di compatibilità."
-            />
-            <FeatureCard
+          />
+          <FeatureCard
               icon={<HeartHandshakeIcon className="h-5 w-5" />}
               title="Score di compatibilità"
               description="Ogni coppia di utenti riceve uno score da 0 a 100 con breakdown per asse. Risultati basati su affinità reale, non su apparenza."
-            />
-            <FeatureCard
+          />
+          <FeatureCard
               icon={<BarChart3Icon className="h-5 w-5" />}
               title="Filtri avanzati"
               description="Filtra i match per genere, fascia d'età, distanza geografica e numero di risultati. Tutto tramite una singola query GraphQL."
-            />
-            <FeatureCard
-              icon={<ShieldCheckIcon className="h-5 w-5" />}
+          />
+          <FeatureCard
+            icon={<ShieldCheckIcon className="h-5 w-5" />}
               title="Login sicuro integrato"
               description="Autenticazione OAuth 2.1 con PKCE inclusa. Non devi gestire password, sessioni o token: ci pensa Identity Matcher."
             />
@@ -263,7 +288,7 @@ export default async function Home() {
       </section>
 
       {/* ━━━━━━━━━━ USE CASES ━━━━━━━━━━ */}
-      <section className="relative py-28 sm:py-36">
+      <section className="relative overflow-x-clip py-28 sm:py-36">
         <GradientBlob className="bottom-0 left-1/4 h-[400px] w-[500px] bg-chart-2/10" />
 
         <Container>
@@ -274,7 +299,7 @@ export default async function Home() {
               </p>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight">
                 Per ogni tipo di connessione.
-              </h2>
+          </h2>
               <p className="mt-4 text-muted-foreground max-w-2xl mx-auto text-base sm:text-lg">
                 Identity Matcher non è solo per il dating. Funziona ovunque
                 servano connessioni significative tra persone.
@@ -354,7 +379,7 @@ export default async function Home() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {item.desc}
                   </p>
-                </div>
+          </div>
               </FadeUpItem>
             ))}
           </FadeUpStagger>
@@ -367,13 +392,13 @@ export default async function Home() {
                   <ArrowRightIcon className="h-4 w-4" />
                 </Link>
               </Button>
-            </div>
+        </div>
           </FadeIn>
         </Container>
       </section>
 
       {/* ━━━━━━━━━━ CTA ━━━━━━━━━━ */}
-      <section className="relative isolate py-28 sm:py-36 overflow-hidden">
+      <section className="relative isolate overflow-x-clip py-28 sm:py-36">
         <GradientBlob className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[700px] bg-primary/15" />
 
         <Container className="relative text-center">
@@ -425,7 +450,7 @@ export default async function Home() {
               </Button>
             </div>
           </FadeIn>
-        </Container>
+    </Container>
       </section>
     </>
   );
@@ -448,13 +473,13 @@ function FeatureCard({
         <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative">
           <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            {icon}
-          </div>
+        {icon}
+      </div>
           <h3 className="font-semibold text-lg mb-2">{title}</h3>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {description}
-          </p>
-        </div>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {description}
+      </p>
+    </div>
       </div>
     </HoverCard>
   );
@@ -476,16 +501,44 @@ function StepCard({
       <div className="relative rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-7">
         <div className="mb-4 flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
-            {n}
-          </div>
+        {n}
+      </div>
           <div className="text-primary">{icon}</div>
         </div>
         <h3 className="font-semibold text-lg mb-2">{title}</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {description}
-        </p>
-      </div>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {description}
+      </p>
+    </div>
     </FadeUpItem>
+  );
+}
+
+function MacOSWindow({
+  children,
+  filename,
+}: {
+  children: string;
+  filename: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-border/50 shadow-2xl shadow-black/40">
+      {/* ── Title bar ── */}
+      <div className="flex items-center gap-2 border-b border-border/50 px-4 py-3" style={{ background: "oklch(0.18 0 0)" }}>
+        <span className="h-3 w-3 rounded-full bg-primary/80" />
+        <span className="h-3 w-3 rounded-full bg-primary/50" />
+        <span className="h-3 w-3 rounded-full bg-primary/25" />
+        <span className="ml-2 text-xs text-muted-foreground font-mono">
+          {filename}
+        </span>
+      </div>
+      {/* ── Code body ── */}
+      <div className="text-sm" style={{ background: "oklch(0.14 0 0)" }}>
+        <CodeBlock language="typescript" className="border-0 rounded-none">
+          {children}
+        </CodeBlock>
+      </div>
+    </div>
   );
 }
 
