@@ -1,11 +1,17 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { jwt } from "better-auth/plugins/jwt";
+import { emailOTP } from "better-auth/plugins";
 import { oauthProvider } from "@better-auth/oauth-provider";
-import { passkey } from "@better-auth/passkey";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "./db";
 import * as schema from "./schema";
+import { sendOTPEmail } from "./email";
+
+export const AUTH_SECRET =
+  process.env.BETTER_AUTH_SECRET ||
+  process.env.AUTH_SECRET ||
+  process.env.NEXTAUTH_SECRET;
 
 /**
  * Identity Matcher - OAuth 2.1 Provider
@@ -21,6 +27,7 @@ import * as schema from "./schema";
  *   - offline_access: Refresh tokens
  */
 export const auth = betterAuth({
+  secret: AUTH_SECRET,
   baseURL: process.env.NEXT_PUBLIC_APP_URL,
   database: drizzleAdapter(db, {
     provider: "pg",
@@ -74,15 +81,19 @@ export const auth = betterAuth({
     storeSessionInDatabase: true,
   },
 
+  emailAndPassword: {
+    enabled: true,
+  },
+
   plugins: [
     jwt(),
-    passkey({
-      rpID:
-        process.env.NODE_ENV === "production"
-          ? new URL(process.env.NEXT_PUBLIC_APP_URL!).hostname
-          : "localhost",
-      rpName: "Identity Matcher",
-      origin: process.env.NEXT_PUBLIC_APP_URL!,
+    emailOTP({
+      async sendVerificationOTP({ email, otp, type }) {
+        await sendOTPEmail(email, otp, type);
+      },
+      otpLength: 6,
+      expiresIn: 300, // 5 minutes
+      disableSignUp: true, // signup handled separately (needs profile fields)
     }),
     oauthProvider({
       loginPage: "/oauth2/sign-in",
@@ -90,14 +101,13 @@ export const auth = betterAuth({
       accessTokenExpiresIn: 3600, // 1 hour
       refreshTokenExpiresIn: 30 * 24 * 60 * 60, // 30 days
       scopes: ["openid", "profile", "email", "offline_access", "location"],
+      silenceWarnings: {
+        oauthAuthServerConfig: true,
+        openidConfig: true,
+      },
     }),
     nextCookies(),
   ],
-
-  // Routes are set up — silence the startup check
-  silenceWarnings: {
-    oauthAuthServerConfig: true,
-  },
 });
 
 export type Session = typeof auth.$Infer.Session;

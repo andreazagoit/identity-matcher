@@ -51,7 +51,7 @@ export function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/.well-known/openid-configuration"
+                  href="/api/auth/.well-known/openid-configuration"
                   target="_blank"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >

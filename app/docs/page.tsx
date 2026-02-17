@@ -90,7 +90,7 @@ export default function DocsPage() {
             <div className="mt-7 flex justify-center">
               <Button asChild className="rounded-full">
                 <Link
-                  href="/.well-known/openid-configuration"
+                  href="/api/auth/.well-known/openid-configuration"
                   target="_blank"
                   className="gap-2"
                 >
@@ -246,7 +246,7 @@ export const auth = betterAuth({
       config: [
         {
           providerId: "identitymatcher",
-          discoveryUrl: \`\${identityMatcherUrl}/.well-known/openid-configuration\`,
+          discoveryUrl: \`\${identityMatcherUrl}/api/auth/.well-known/openid-configuration\`,
           clientId: process.env.IDENTITY_MATCHER_CLIENT_ID!,
           clientSecret: process.env.IDENTITY_MATCHER_CLIENT_SECRET!,
           pkce: true,
@@ -386,7 +386,7 @@ export function LoginButton() {
           <div className="space-y-4">
             <EndpointRow
               method="GET"
-              path="/.well-known/openid-configuration"
+              path="/api/auth/.well-known/openid-configuration"
               description="Discovery OIDC — contiene tutti gli URL necessari per il flusso OAuth2."
             />
             <EndpointRow
@@ -733,7 +733,7 @@ query {
                 <>
                   L&apos;endpoint corretto è{" "}
                   <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-                    /.well-known/openid-configuration
+                    /api/auth/.well-known/openid-configuration
                   </code>
                   . Non usare{" "}
                   <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">

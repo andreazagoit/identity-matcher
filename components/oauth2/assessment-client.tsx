@@ -37,6 +37,12 @@ function AssessmentContent() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!sessionLoading && !session?.user) {
+      router.replace("/oauth2/sign-in");
+    }
+  }, [sessionLoading, session, router]);
+
   if (sessionLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-background">
@@ -45,11 +51,7 @@ function AssessmentContent() {
     );
   }
 
-  if (!session?.user) {
-    // Not authenticated — redirect to sign-in
-    router.push("/oauth2/sign-in");
-    return null;
-  }
+  if (!session?.user) return null;
 
   const handleComplete = async (
     answers: Record<string, number | string>,

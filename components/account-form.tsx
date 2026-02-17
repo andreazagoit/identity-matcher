@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/client";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,9 @@ import { Label } from "@/components/ui/label";
 import {
   CheckIcon,
   ClipboardListIcon,
-  FingerprintIcon,
   Loader2Icon,
   LogOutIcon,
   MonitorSmartphoneIcon,
-  PlusIcon,
   RefreshCwIcon,
   Trash2Icon,
   UserIcon,
@@ -56,74 +54,12 @@ export default function AccountForm({
   const birthdate = (user.birthdate as string) || "";
   const gender = (user.gender as string) || "";
 
-  // Passkey state
-  type Passkey = { id: string; name?: string | null; createdAt?: string | Date | null; deviceType?: string | null };
-  const [passkeys, setPasskeys] = useState<Passkey[]>([]);
-  const [passkeyLoading, setPasskeyLoading] = useState(false);
-  const [passkeyError, setPasskeyError] = useState<string | null>(null);
-  const [passkeySuccess, setPasskeySuccess] = useState(false);
-  const [deletingPasskeyId, setDeletingPasskeyId] = useState<string | null>(null);
-
   // Sessions state
   const [sessions, setSessions] = useState(initialSessions);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [signOutLoading, setSignOutLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  // ── Load passkeys ──
-  const loadPasskeys = useCallback(async () => {
-    try {
-      const result = await authClient.passkey.listUserPasskeys();
-      if (result?.data) {
-        setPasskeys(result.data as Passkey[]);
-      }
-    } catch {
-      // silent
-    }
-  }, []);
-
-  useEffect(() => {
-    loadPasskeys();
-  }, [loadPasskeys]);
-
-  // ── Add passkey ──
-  const handleAddPasskey = async () => {
-    setPasskeyLoading(true);
-    setPasskeyError(null);
-    setPasskeySuccess(false);
-
-    try {
-      const result = await authClient.passkey.addPasskey({
-        name: `Passkey ${passkeys.length + 1}`,
-      });
-
-      if (result?.error) {
-        setPasskeyError((result.error as { message?: string }).message || "Errore nella registrazione della passkey");
-      } else {
-        setPasskeySuccess(true);
-        setTimeout(() => setPasskeySuccess(false), 3000);
-        await loadPasskeys();
-      }
-    } catch {
-      setPasskeyError("Registrazione passkey fallita. Assicurati che il dispositivo supporti le passkey.");
-    } finally {
-      setPasskeyLoading(false);
-    }
-  };
-
-  // ── Delete passkey ──
-  const handleDeletePasskey = async (id: string) => {
-    setDeletingPasskeyId(id);
-    try {
-      await authClient.passkey.deletePasskey({ id });
-      setPasskeys((prev) => prev.filter((p) => p.id !== id));
-    } catch {
-      // silent
-    } finally {
-      setDeletingPasskeyId(null);
-    }
-  };
 
   // ── Revoke Session ──
   const handleRevokeSession = async (sessionToken: string) => {
@@ -356,138 +292,6 @@ export default function AccountForm({
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* ── Passkeys ── */}
-      <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                  <FingerprintIcon className="h-4 w-4 text-primary" />
-                </div>
-                Passkey
-              </CardTitle>
-              <CardDescription className="mt-1.5">
-                Gestisci le passkey associate al tuo account. Usa impronta, volto o chiave di sicurezza per accedere.
-              </CardDescription>
-            </div>
-            <Button
-              onClick={handleAddPasskey}
-              disabled={passkeyLoading}
-              size="sm"
-              variant="outline"
-              className="rounded-full shrink-0"
-            >
-              {passkeyLoading ? (
-                <Loader2Icon className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <PlusIcon className="h-4 w-4 mr-2" />
-              )}
-              Aggiungi
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {passkeyError && (
-            <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-2.5 rounded-xl text-sm mb-4">
-              {passkeyError}
-            </div>
-          )}
-
-          {passkeySuccess && (
-            <div className="bg-green-500/10 border border-green-500/30 text-green-500 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 mb-4">
-              <CheckIcon className="h-4 w-4" />
-              Passkey aggiunta con successo
-            </div>
-          )}
-
-          {passkeys.length === 0 ? (
-            <div className="text-center py-6">
-              <FingerprintIcon className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">
-                Nessuna passkey registrata.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Aggiungi una passkey per accedere senza password.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {passkeys.map((pk) => {
-                const createdAt = pk.createdAt
-                  ? new Date(pk.createdAt).toLocaleDateString("it-IT", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })
-                  : "";
-
-                return (
-                  <div
-                    key={pk.id}
-                    className="flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-background/50 p-4"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <FingerprintIcon className="h-5 w-5 text-primary shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {pk.name || "Passkey"}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {pk.deviceType === "singleDevice"
-                            ? "Dispositivo singolo"
-                            : pk.deviceType === "multiDevice"
-                              ? "Multi-dispositivo"
-                              : ""}
-                          {createdAt && ` · Aggiunta il ${createdAt}`}
-                        </p>
-                      </div>
-                    </div>
-                    {passkeys.length > 1 && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={deletingPasskeyId === pk.id}
-                            className="shrink-0 text-muted-foreground hover:text-destructive rounded-full"
-                          >
-                            {deletingPasskeyId === pk.id ? (
-                              <Loader2Icon className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Trash2Icon className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Rimuovi passkey
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Vuoi rimuovere la passkey &quot;{pk.name || "Passkey"}&quot;?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Annulla</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeletePasskey(pk.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Rimuovi
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </CardContent>
       </Card>
 

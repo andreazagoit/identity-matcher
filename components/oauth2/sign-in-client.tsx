@@ -20,17 +20,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { authClient } from "@/lib/client";
-import { FingerprintIcon, Loader2Icon, UserPlusIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  Loader2Icon,
+  LogInIcon,
+  MailIcon,
+  UserPlusIcon,
+} from "lucide-react";
 
 import { useOAuthFlow } from "@/hooks/use-oauth-flow";
 import { mapAuthErrorMessage } from "@/lib/oauth-helpers";
-import { signupPasswordless } from "@/lib/actions/signup";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 type AuthMode = "login" | "signup";
+type LoginStep = "email" | "otp";
 type Gender = "" | "man" | "woman" | "non_binary";
 
 interface SignupData {
@@ -58,6 +64,11 @@ function SignInContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Login fields
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginStep, setLoginStep] = useState<LoginStep>("email");
+  const [otp, setOtp] = useState("");
+
   // Signup fields
   const [signupData, setSignupData] = useState<SignupData>(EMPTY_SIGNUP);
 
@@ -77,16 +88,31 @@ function SignInContent() {
     window.location.href = url;
   };
 
+  const navigateAfterAuth = () => {
+    if (isOAuthFlow) {
+      const continueUrl = getContinueUrl();
+      if (continueUrl) {
+        go(continueUrl);
+        return;
+      }
+    }
+    go(fallbackRedirect);
+  };
+
   // -- handlers -------------------------------------------------------------
 
-  /** Login with passkey (WebAuthn) */
-  const handlePasskeyLogin = async () => {
+  /** Step 1: Send OTP to email */
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (loading) return;
     setLoading(true);
     setError(null);
 
     try {
-      const result = await authClient.signIn.passkey();
+      const result = await authClient.emailOtp.sendVerificationOtp({
+        email: loginEmail,
+        type: "sign-in",
+      });
 
       if (result?.error) {
         fail(
@@ -97,24 +123,42 @@ function SignInContent() {
         return;
       }
 
-      // Resume OAuth flow if active
-      if (isOAuthFlow) {
-        const continueUrl = getContinueUrl();
-        if (continueUrl) {
-          go(continueUrl);
-          return;
-        }
-      }
-
-      go(fallbackRedirect);
-    } catch {
-      fail(
-        "Autenticazione con passkey fallita. Assicurati che il dispositivo supporti le passkey.",
-      );
+      setLoginStep("otp");
+      setLoading(false);
+    } catch (err) {
+      fail(err instanceof Error ? err.message : "Invio OTP fallito");
     }
   };
 
-  /** Passwordless signup: server action creates user + session, then register passkey */
+  /** Step 2: Verify OTP and sign in */
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await authClient.signIn.emailOtp({
+        email: loginEmail,
+        otp,
+      });
+
+      if (result?.error) {
+        fail(
+          mapAuthErrorMessage(
+            result.error as { code?: string; message?: string },
+          ),
+        );
+        return;
+      }
+
+      navigateAfterAuth();
+    } catch (err) {
+      fail(err instanceof Error ? err.message : "Verifica OTP fallita");
+    }
+  };
+
+  /** Signup: create account with profile data, then redirect */
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
@@ -134,42 +178,36 @@ function SignInContent() {
     }
 
     try {
-      // 1. Create account via server action (no password involved)
-      const result = await signupPasswordless({
+      // Generate a random password — the user will never use it;
+      // login is always via email OTP.
+      const randomPassword = crypto.randomUUID() + "!Aa1";
+
+      const result = await authClient.signUp.email({
         email: signupData.email,
+        password: randomPassword,
+        name: `${signupData.givenName} ${signupData.familyName}`,
         givenName: signupData.givenName,
         familyName: signupData.familyName,
         birthdate: signupData.birthdate,
         gender: signupData.gender,
-      });
+      } as Parameters<typeof authClient.signUp.email>[0]);
 
-      if (!result.success || !result.sessionToken) {
-        fail(result.error || "Registrazione fallita");
+      if (result?.error) {
+        fail(
+          mapAuthErrorMessage(
+            result.error as { code?: string; message?: string },
+          ),
+        );
         return;
       }
 
-      // 2. Set the session cookie so better-auth recognizes the user
-      document.cookie = `idm.session_token=${result.sessionToken}; path=/; max-age=${7 * 24 * 60 * 60}; samesite=lax`;
-
-      // 3. Register a passkey for the newly created account
-      try {
-        await authClient.passkey.addPasskey({
-          name: "Passkey principale",
-        });
-      } catch {
-        // Passkey registration failed — user can add one later from account page
-        console.warn("Passkey registration skipped during signup");
-      }
-
-      // 4. Navigate to assessment → then resume OAuth or go home
+      // After signup, go to assessment then final redirect
       if (isOAuthFlow) {
         const continueUrl = getContinueUrl();
-        if (!continueUrl) {
-          fail("Impossibile continuare il flusso OAuth. Riprova.");
+        if (continueUrl) {
+          go(`/oauth2/assessment?redirect=${encodeURIComponent(continueUrl)}`);
           return;
         }
-        go(`/oauth2/assessment?redirect=${encodeURIComponent(continueUrl)}`);
-        return;
       }
 
       go(
@@ -178,6 +216,13 @@ function SignInContent() {
     } catch (err) {
       fail(err instanceof Error ? err.message : "Registrazione fallita");
     }
+  };
+
+  /** Go back from OTP step to email step */
+  const handleBackToEmail = () => {
+    setLoginStep("email");
+    setOtp("");
+    setError(null);
   };
 
   // -- render ---------------------------------------------------------------
@@ -197,7 +242,7 @@ function SignInContent() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1.5">
             {mode === "login"
-              ? "Accedi con la tua passkey"
+              ? "Accedi al tuo account"
               : "Crea un nuovo account"}
           </p>
         </div>
@@ -211,37 +256,103 @@ function SignInContent() {
         <Card className="border-border/50 bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden">
           <CardHeader>
             <CardTitle>
-              {mode === "login" ? "Accedi" : "Registrati"}
+              {mode === "login"
+                ? loginStep === "email"
+                  ? "Accedi"
+                  : "Inserisci il codice"
+                : "Registrati"}
             </CardTitle>
             <CardDescription>
               {mode === "login"
-                ? "Usa la tua passkey (impronta, volto o chiave di sicurezza)"
+                ? loginStep === "email"
+                  ? "Inserisci la tua email per ricevere un codice di accesso"
+                  : `Abbiamo inviato un codice a ${loginEmail}`
                 : "Compila i dati per creare il tuo account"}
             </CardDescription>
           </CardHeader>
 
           <CardContent>
             {mode === "login" ? (
-              <div className="space-y-4">
-                <Button
-                  onClick={handlePasskeyLogin}
-                  disabled={loading}
-                  className="w-full h-12 text-base gap-3"
-                >
-                  {loading ? (
-                    <Loader2Icon className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <FingerprintIcon className="w-5 h-5" />
-                  )}
-                  Accedi con Passkey
-                </Button>
-                <p className="text-xs text-center text-muted-foreground">
-                  Il browser ti chiederà di verificare la tua identità tramite
-                  impronta digitale, riconoscimento facciale o chiave di
-                  sicurezza.
-                </p>
-              </div>
+              loginStep === "email" ? (
+                /* ── Login Step 1: Email ── */
+                <form onSubmit={handleSendOtp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email">Email</Label>
+                    <Input
+                      id="login-email"
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      required
+                      placeholder="tu@esempio.com"
+                      autoComplete="email"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    {loading ? (
+                      <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <MailIcon className="w-4 h-4 mr-2" />
+                    )}
+                    Invia codice
+                  </Button>
+                </form>
+              ) : (
+                /* ── Login Step 2: OTP ── */
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-otp">Codice OTP</Label>
+                    <Input
+                      id="login-otp"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={6}
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                      required
+                      placeholder="000000"
+                      autoComplete="one-time-code"
+                      autoFocus
+                      className="text-center text-2xl tracking-[0.5em] font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Controlla la tua casella email. Il codice scade tra 5
+                      minuti.
+                    </p>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={loading || otp.length < 6}
+                    className="w-full"
+                  >
+                    {loading ? (
+                      <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <LogInIcon className="w-4 h-4 mr-2" />
+                    )}
+                    Accedi
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={handleBackToEmail}
+                    className="w-full gap-2 text-muted-foreground"
+                  >
+                    <ArrowLeftIcon className="w-4 h-4" />
+                    Cambia email
+                  </Button>
+                </form>
+              )
             ) : (
+              /* ── Signup Form ── */
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
@@ -294,6 +405,7 @@ function SignInContent() {
                         updateSignup("birthdate", e.target.value)
                       }
                       required
+                      className="dark:[color-scheme:dark]"
                     />
                   </div>
                   <div className="space-y-2">
@@ -313,17 +425,6 @@ function SignInContent() {
                         <SelectItem value="non_binary">Non binario</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                </div>
-
-                <div className="rounded-lg bg-muted/50 border border-border/50 p-3">
-                  <div className="flex items-start gap-2.5">
-                    <FingerprintIcon className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Dopo la registrazione ti verrà chiesto di configurare una{" "}
-                      <strong className="text-foreground">passkey</strong> per
-                      accedere in modo sicuro senza password.
-                    </p>
                   </div>
                 </div>
 
@@ -349,6 +450,8 @@ function SignInContent() {
                   type="button"
                   onClick={() => {
                     setMode(mode === "login" ? "signup" : "login");
+                    setLoginStep("email");
+                    setOtp("");
                     setError(null);
                   }}
                   className="text-primary hover:underline font-medium"
