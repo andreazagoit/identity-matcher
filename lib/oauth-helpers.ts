@@ -7,9 +7,10 @@
 // ---------------------------------------------------------------------------
 
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  invalid_email_or_password: "Email o password non valide",
+  invalid_email_or_password: "Credenziali non valide",
   account_not_linked:
-    "Account non collegato al metodo di accesso scelto. Prova con il provider usato in registrazione oppure reimposta la password.",
+    "Account non collegato al metodo di accesso scelto. Prova con il provider usato in registrazione.",
+  user_already_exists: "Esiste già un account con questa email.",
 };
 
 export function mapAuthErrorMessage(
@@ -57,34 +58,4 @@ export function extractRedirectUrl(
   if (!data || typeof data !== "object") return undefined;
   const url = data.url;
   return typeof url === "string" ? url : undefined;
-}
-
-// ---------------------------------------------------------------------------
-// Native form POST fallback (CORS workaround for cross-origin OAuth redirect)
-// ---------------------------------------------------------------------------
-
-export function submitFormPost(
-  email: string,
-  password: string,
-  oauthQuery: string | undefined,
-) {
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = "/api/auth/sign-in/email";
-  form.style.display = "none";
-
-  const addField = (name: string, value: string) => {
-    const input = document.createElement("input");
-    input.type = "hidden";
-    input.name = name;
-    input.value = value;
-    form.appendChild(input);
-  };
-
-  addField("email", email);
-  addField("password", password);
-  if (oauthQuery) addField("oauth_query", oauthQuery);
-
-  document.body.appendChild(form);
-  form.submit();
 }

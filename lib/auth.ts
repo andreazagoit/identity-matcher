@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { jwt } from "better-auth/plugins/jwt";
 import { oauthProvider } from "@better-auth/oauth-provider";
+import { passkey } from "@better-auth/passkey";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "./db";
 import * as schema from "./schema";
@@ -32,12 +33,6 @@ export const auth = betterAuth({
     // Use a distinct cookie prefix so identitymatcher's session cookie
     // doesn't collide with client apps on the same domain (e.g. localhost).
     cookiePrefix: "idm",
-  },
-
-  emailAndPassword: {
-    enabled: true,
-    minPasswordLength: 8,
-    maxPasswordLength: 128,
   },
 
   user: {
@@ -81,6 +76,14 @@ export const auth = betterAuth({
 
   plugins: [
     jwt(),
+    passkey({
+      rpID:
+        process.env.NODE_ENV === "production"
+          ? new URL(process.env.NEXT_PUBLIC_APP_URL!).hostname
+          : "localhost",
+      rpName: "Identity Matcher",
+      origin: process.env.NEXT_PUBLIC_APP_URL!,
+    }),
     oauthProvider({
       loginPage: "/oauth2/sign-in",
       consentPage: "/oauth2/consent",
